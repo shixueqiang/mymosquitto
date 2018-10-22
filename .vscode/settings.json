@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "mosquitto.h": "c"
+        "mosquitto.h": "c",
+        "log.h": "c",
+        "stdio.h": "c",
+        "jni.h": "c",
+        "string.h": "c"
     }
 }
