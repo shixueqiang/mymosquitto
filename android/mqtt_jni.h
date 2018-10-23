@@ -4,7 +4,6 @@
 
 #ifndef _Included_com_mqtt_jni_MosquittoJNI
 #define _Included_com_mqtt_jni_MosquittoJNI
-#define main client_main
 #ifdef __cplusplus
 extern "C"
 {

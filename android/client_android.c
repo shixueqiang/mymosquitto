@@ -2,9 +2,9 @@
 #include "mqtt_main.h"
 #include <android/log.h>
 #include <jni.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
-
 #define LOG_TAG "Mosquitto_Android"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
@@ -22,11 +22,81 @@ char *strdup(const char *string)
 /*******************************************************************************
                                Globals
 *******************************************************************************/
+static pthread_key_t mThreadKey;
+static JavaVM *mJavaVM;
+
 static jobject mMqttObj;
 static jmethodID midMessageCallback;
 
-/* main function prototype */
-typedef int (*MQTT_MAIN)(int argc, char *argv[]);
+JNIEnv *Android_JNI_GetEnv(void)
+{
+    JNIEnv *env;
+    int status = (*mJavaVM)->AttachCurrentThread(mJavaVM, &env, NULL);
+    if (status < 0)
+    {
+        LOGE("failed to attach current thread");
+        return 0;
+    }
+
+    pthread_setspecific(mThreadKey, (void *)env);
+
+    return env;
+}
+
+void mqtt_callback(const struct mosquitto_message *message)
+{
+    const unsigned char *payload = message->payload;
+    JNIEnv *env = Android_JNI_GetEnv();
+    int len = sizeof(payload);
+    jbyteArray byteArray = (*env)->NewByteArray(env, sizeof(payload));
+    (*env)->SetByteArrayRegion(env, byteArray, 0, len, (jbyte *)payload);
+    (*env)->CallObjectMethod(env, mMqttObj, midMessageCallback, byteArray);
+    (*env)->ReleaseByteArrayElements(env, byteArray, payload, JNI_COMMIT);
+}
+
+static void Android_JNI_ThreadDestroyed(void *value)
+{
+    /* The thread is being destroyed, detach it from the Java VM and set the
+   * mThreadKey value to NULL as required */
+    JNIEnv *env = (JNIEnv *)value;
+    if (env != NULL)
+    {
+        (*mJavaVM)->DetachCurrentThread(mJavaVM);
+        pthread_setspecific(mThreadKey, NULL);
+    }
+}
+
+int Android_JNI_SetupThread(void)
+{
+    Android_JNI_GetEnv();
+    return 1;
+}
+
+/* Library init */
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
+{
+    JNIEnv *env;
+    mJavaVM = vm;
+    LOGE("JNI_OnLoad called");
+    if ((*mJavaVM)->GetEnv(mJavaVM, (void **)&env, JNI_VERSION_1_4) != JNI_OK)
+    {
+        LOGE("Failed to get the environment using GetEnv()");
+        return -1;
+    }
+    /*
+   * Create mThreadKey so we can keep track of the JNIEnv assigned to each
+   * thread Refer to
+   * http://developer.android.com/guide/practices/design/jni.html for the
+   * rationale behind this
+   */
+    if (pthread_key_create(&mThreadKey, Android_JNI_ThreadDestroyed) != 0)
+    {
+        LOGE("Error initializing pthread key");
+    }
+    Android_JNI_SetupThread();
+
+    return JNI_VERSION_1_4;
+}
 
 JNIEXPORT jint JNICALL
 Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
@@ -71,7 +141,7 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeRunMain(
         }
         argv[argc++] = arg;
 
-        status = SDL_main(argc, argv);
+        status = main(argc, argv);
 
         /* Release the arguments. */
         for (i = 0; i < argc; ++i)

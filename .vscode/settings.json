@@ -4,6 +4,8 @@
         "log.h": "c",
         "stdio.h": "c",
         "jni.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "cassert": "c",
+        "mqtt_main.h": "c"
     }
 }
