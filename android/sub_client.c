@@ -51,11 +51,19 @@ void my_signal_handler(int signum)
 
 void print_message(struct mosq_config *cfg, const struct mosquitto_message *message);
 
-int mqtt_subscribe(char *topic) { mosquitto_subscribe(mosq, NULL, topic, 1); }
+int mqtt_subscribe(const char *topic) 
+{ 
+	return mosquitto_subscribe(mosq, NULL, topic, 1); 
+}
  
-int mqtt_unsubscribe(char *topic) { mosquitto_unsubscribe(mosq, NULL, topic); }
+int mqtt_unsubscribe(const char *topic) 
+{ 
+	return mosquitto_unsubscribe(mosq, NULL, topic); 
+}
 
-int mqtt_quit() {}
+int mqtt_quit() {
+	return 1;
+}
 
 void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
 {
@@ -238,7 +246,7 @@ void print_usage(void)
 	printf("\nSee http://mosquitto.org/ for more information.\n\n");
 }
 
-int main(int argc, char *argv[])
+int mqtt_main(int argc, char *argv[])
 {
 	struct mosq_config cfg;
 	int rc;

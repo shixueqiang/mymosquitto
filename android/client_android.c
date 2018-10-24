@@ -51,7 +51,8 @@ void mqtt_callback(const struct mosquitto_message *message)
     jbyteArray byteArray = (*env)->NewByteArray(env, sizeof(payload));
     (*env)->SetByteArrayRegion(env, byteArray, 0, len, (jbyte *)payload);
     (*env)->CallObjectMethod(env, mMqttObj, midMessageCallback, byteArray);
-    (*env)->ReleaseByteArrayElements(env, byteArray, payload, JNI_COMMIT);
+    (*env)->ReleaseByteArrayElements(env, byteArray, (jbyte *)payload,
+                                     JNI_COMMIT);
 }
 
 static void Android_JNI_ThreadDestroyed(void *value)
@@ -106,6 +107,7 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
     jclass clazz = (*mEnv)->FindClass(mEnv, "com/mqtt/jni/MosquittoJNI");
     midMessageCallback =
         (*mEnv)->GetMethodID(mEnv, clazz, "messageCallback", "([B])V");
+    return 1;
 }
 
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeRunMain(
@@ -141,7 +143,7 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeRunMain(
         }
         argv[argc++] = arg;
 
-        status = main(argc, argv);
+        status = mqtt_main(argc, argv);
 
         /* Release the arguments. */
         for (i = 0; i < argc; ++i)
@@ -155,19 +157,51 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeRunMain(
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_subscribe(
     JNIEnv *mEnv, jobject obj, jobjectArray topics)
 {
-    char *utf;
-    utf = (*mEnv)->GetStringUTFChars(mEnv, topics, NULL);
-    mqtt_subscribe(utf);
-    (*mEnv)->ReleaseStringUTFChars(mEnv, topics, utf);
+    int i;
+    int len;
+    int status;
+    len = (*mEnv)->GetArrayLength(mEnv, topics);
+    for (i = 0; i < len; ++i)
+    {
+        const char *utf;
+        jstring string = (*mEnv)->GetObjectArrayElement(mEnv, topics, i);
+        if (string)
+        {
+            utf = (*mEnv)->GetStringUTFChars(mEnv, string, 0);
+            if (utf)
+            {
+                status = mqtt_subscribe(utf);
+                (*mEnv)->ReleaseStringUTFChars(mEnv, string, utf);
+            }
+            (*mEnv)->DeleteLocalRef(mEnv, string);
+        }
+    }
+    return status;
 }
 
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_unsubscribe(
     JNIEnv *mEnv, jobject obj, jobjectArray topics)
 {
-    char *utf;
-    utf = (*mEnv)->GetStringUTFChars(mEnv, topics, NULL);
-    mqtt_unsubscribe(utf);
-    (*mEnv)->ReleaseStringUTFChars(mEnv, topics, utf);
+    int i;
+    int len;
+    int status;
+    len = (*mEnv)->GetArrayLength(mEnv, topics);
+    for (i = 0; i < len; ++i)
+    {
+        const char *utf;
+        jstring string = (*mEnv)->GetObjectArrayElement(mEnv, topics, i);
+        if (string)
+        {
+            utf = (*mEnv)->GetStringUTFChars(mEnv, string, 0);
+            if (utf)
+            {
+                status = mqtt_unsubscribe(utf);
+                (*mEnv)->ReleaseStringUTFChars(mEnv, string, utf);
+            }
+            (*mEnv)->DeleteLocalRef(mEnv, string);
+        }
+    }
+    return status;
 }
 
 JNIEXPORT void JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeQuit(JNIEnv *mEnv,
