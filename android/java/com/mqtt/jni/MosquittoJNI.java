@@ -1,10 +1,16 @@
 package com.mqtt.jni;
 
-class MosquittoJNI {
+public class MosquittoJNI {
   private static volatile MosquittoJNI mInstance = null;
   private MessageListener messageListener;
 
-  private MosquittoJNI() {}
+  static {
+    System.loadLibrary("mosquitto");
+    System.loadLibrary("mosquitto_sub");
+  }
+
+  private MosquittoJNI() {
+  }
 
   public static MosquittoJNI getInstance() {
     if (mInstance == null) {
@@ -17,21 +23,26 @@ class MosquittoJNI {
     return mInstance;
   }
 
-  private native int nativeSetupJNI();
+  public native int nativeSetupJNI();
 
-  private native int nativeRunMain(String function, Object arguments);
+  public native int nativeRunMain(String function, Object arguments);
 
-  private native int subscribe(String[] topics);
+  public native int subscribe(String[] topics);
 
-  private native int unsubscribe(String[] topics);
+  public native int unsubscribe(String[] topics);
 
-  private native void nativeQuit();
+  public native void nativeQuit();
 
-  private void messageCallback(byte[] message) {
+  public void messageCallback(byte[] message) {
     if (messageListener != null) {
       messageListener.onMessage(message);
     }
   }
 
-  private void logCallback(String log) {}
+  private void logCallback(String log) {
+  }
+
+  public void setMessageListener(MessageListener messageListener) {
+    this.messageListener = messageListener;
+  }
 }

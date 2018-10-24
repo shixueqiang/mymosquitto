@@ -1,12 +1,9 @@
 #include "mqtt_jni.h"
 #include "mqtt_main.h"
-#include <android/log.h>
 #include <jni.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
-#define LOG_TAG "Mosquitto_Android"
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 char *strdup(const char *string)
 {
@@ -45,12 +42,14 @@ JNIEnv *Android_JNI_GetEnv(void)
 
 void mqtt_callback(const struct mosquitto_message *message)
 {
+    char *log = message->payload;
+    LOGE("mqtt_callback %s", log);
     const unsigned char *payload = message->payload;
     JNIEnv *env = Android_JNI_GetEnv();
     int len = sizeof(payload);
     jbyteArray byteArray = (*env)->NewByteArray(env, sizeof(payload));
     (*env)->SetByteArrayRegion(env, byteArray, 0, len, (jbyte *)payload);
-    (*env)->CallObjectMethod(env, mMqttObj, midMessageCallback, byteArray);
+    (*env)->CallVoidMethod(env, mMqttObj, midMessageCallback, byteArray);
     (*env)->ReleaseByteArrayElements(env, byteArray, (jbyte *)payload,
                                      JNI_COMMIT);
 }
@@ -105,8 +104,11 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
     LOGE("nativeSetupJNI");
     mMqttObj = (jobject)((*mEnv)->NewGlobalRef(mEnv, obj));
     jclass clazz = (*mEnv)->FindClass(mEnv, "com/mqtt/jni/MosquittoJNI");
-    midMessageCallback =
-        (*mEnv)->GetMethodID(mEnv, clazz, "messageCallback", "([B])V");
+    if (clazz)
+    {
+        midMessageCallback =
+            (*mEnv)->GetMethodID(mEnv, clazz, "messageCallback", "([B)V");
+    }
     return 1;
 }
 
@@ -122,6 +124,7 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeRunMain(
     len = (*mEnv)->GetArrayLength(mEnv, arguments);
     char *argv[len];
     argc = 0;
+    LOGE("nativeRunMain");
     for (i = 0; i < len; ++i)
     {
         const char *utf;
@@ -142,14 +145,18 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeRunMain(
             arg = strdup("");
         }
         argv[argc++] = arg;
+    }
+    LOGE("argc:%d", argc);
+    for (i = 0; i < argc; ++i)
+    {
+        LOGE("index %d argc:%s", i, argv[i]);
+    }
+    status = mqtt_main(argc, argv);
 
-        status = mqtt_main(argc, argv);
-
-        /* Release the arguments. */
-        for (i = 0; i < argc; ++i)
-        {
-            free(argv[i]);
-        }
+    /* Release the arguments. */
+    for (i = 0; i < argc; ++i)
+    {
+        free(argv[i]);
     }
     return status;
 }

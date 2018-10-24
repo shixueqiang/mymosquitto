@@ -3,6 +3,7 @@ include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
 link_directories(${mosquitto_BINARY_DIR}/lib)
 
 set(shared_src client_shared.c client_shared.h)
+set(LOG_LIBRARIES /home/shixq/android/arm-android-toolchain/sysroot/usr/lib/liblog.so)
 
 if (${WITH_SRV} STREQUAL ON)
 	add_definitions("-DWITH_SRV")
@@ -12,4 +13,4 @@ add_library(mosquitto_pub SHARED pub_client.c ${shared_src})
 add_library(mosquitto_sub SHARED sub_client.c sub_client_output.c client_android.c ${shared_src})
 
 target_link_libraries(mosquitto_pub libmosquitto)
-target_link_libraries(mosquitto_sub libmosquitto)
+target_link_libraries(mosquitto_sub libmosquitto ${LOG_LIBRARIES})

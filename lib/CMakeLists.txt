@@ -104,11 +104,17 @@ set_target_properties(libmosquitto PROPERTIES
 
 target_link_libraries(libmosquitto ${LIBRARIES})
 
-set_target_properties(libmosquitto PROPERTIES
-	OUTPUT_NAME mosquitto
-	VERSION ${VERSION}
-	SOVERSION 1
-)
+if(${TARGET_ANDROID} STREQUAL ON)
+	set_target_properties(libmosquitto PROPERTIES
+		OUTPUT_NAME mosquitto
+	)
+else(${TARGET_ANDROID} STREQUAL ON)
+	set_target_properties(libmosquitto PROPERTIES
+		OUTPUT_NAME mosquitto
+		VERSION ${VERSION}
+		SOVERSION 1
+	)
+endif(${TARGET_ANDROID} STREQUAL ON)
 
 install(TARGETS libmosquitto RUNTIME DESTINATION "${BINDIR}" LIBRARY DESTINATION "${LIBDIR}")
 
