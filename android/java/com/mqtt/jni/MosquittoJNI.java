@@ -33,9 +33,9 @@ public class MosquittoJNI {
 
   public native void nativeQuit();
 
-  private void onMessage(byte[] message) {
+  private void onMessage(String topic, byte[] message) {
     if (messageListener != null) {
-      messageListener.onMessage(message);
+      messageListener.onMessage(topic, message);
     }
   }
 

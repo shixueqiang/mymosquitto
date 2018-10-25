@@ -49,12 +49,14 @@ void message_callback(const struct mosquitto_message *message)
     LOGE("mqtt_callback %s", log);
     const unsigned char *payload = message->payload;
     JNIEnv *env = Android_JNI_GetEnv();
+    jstring topic = (*env)->NewStringUTF(env, message->topic);
     int len = message->payloadlen;
     jbyteArray byteArray = (*env)->NewByteArray(env, len);
     (*env)->SetByteArrayRegion(env, byteArray, 0, len, (jbyte *)payload);
-    (*env)->CallVoidMethod(env, mMqttObj, midOnMessage, byteArray);
+    (*env)->CallVoidMethod(env, mMqttObj, midOnMessage, topic, byteArray);
     (*env)->ReleaseByteArrayElements(env, byteArray, (jbyte *)payload,
                                      JNI_COMMIT);
+    (*env)->DeleteLocalRef(env, topic);
 }
 
 void connect_callback()
@@ -123,7 +125,7 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
     jclass clazz = (*mEnv)->FindClass(mEnv, "com/mqtt/jni/MosquittoJNI");
     if (clazz)
     {
-        midOnMessage = (*mEnv)->GetMethodID(mEnv, clazz, "onMessage", "([B)V");
+        midOnMessage = (*mEnv)->GetMethodID(mEnv, clazz, "onMessage", "(Ljava/lang/String;[B)V");
         midOnConnect = (*mEnv)->GetMethodID(mEnv, clazz, "onConnect", "()V");
         midOnDebugLog = (*mEnv)->GetMethodID(mEnv, clazz, "onDebugLog",
                                              "(Ljava/lang/String;)V");

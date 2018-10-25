@@ -1,7 +1,9 @@
 package com.mqtt.jni;
 
 public interface MessageListener {
-    void onMessage(byte[] message);
+    void onMessage(String topic, byte[] message);
+
     void onConnect();
+
     void onDebugLog(String log);
 }
