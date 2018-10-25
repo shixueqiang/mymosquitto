@@ -6,8 +6,6 @@
 
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
-project(mosquitto)
-
 cmake_minimum_required(VERSION 2.8)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
@@ -52,15 +50,24 @@ if(${TARGET_ANDROID} STREQUAL ON)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIE")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fPIE -pie")
 	# 配置使用 NDK Standalone Toolchain 编译
-	set(NDK_STANDALONE_TOOLCHAIN /home/shixq/android/arm-android-toolchain)
+	# set(NDK_STANDALONE_TOOLCHAIN /home/shixq/android/arm-android-toolchain)
+	set(CMAKE_ANDROID_NDK /home/shixq/android/android-ndk-r14b)
 	set(CMAKE_SYSTEM_NAME Android)
-	set(CMAKE_SYSTEM_VERSION 21)
-	set(CMAKE_C_COMPILER ${NDK_STANDALONE_TOOLCHAIN}/bin/clang)
-	set(CMAKE_CXX_COMPILER ${NDK_STANDALONE_TOOLCHAIN}/bin/clang++)
-	set(CMAKE_FIND_ROOT_PATH ${NDK_STANDALONE_TOOLCHAIN})
-	# 使用 NDK 提供的头文件
-	add_definitions("--sysroot=${NDK_STANDALONE_TOOLCHAIN}/sysroot")
+	if(${ANDROID_ABI} STREQUAL arm)
+		set(CMAKE_SYSTEM_VERSION 19)
+		set(CMAKE_ANDROID_ARCH_ABI armeabi-v7a)
+	elseif(${ANDROID_ABI} STREQUAL arm64)
+		set(CMAKE_SYSTEM_VERSION 21)
+		set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
+	endif(${ANDROID_ABI} STREQUAL arm)
+	set(CMAKE_C_COMPILER ${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang)
+	set(CMAKE_CXX_COMPILER ${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++)
+	# set(CMAKE_FIND_ROOT_PATH ${NDK_STANDALONE_TOOLCHAIN})
+	# # 使用 NDK 提供的头文件
+	# add_definitions("--sysroot=${NDK_STANDALONE_TOOLCHAIN}/sysroot")
 endif(${TARGET_ANDROID} STREQUAL ON)
+
+project(mosquitto)
 
 option(WITH_TLS
 	"Include SSL/TLS support?" ON)
@@ -71,13 +78,13 @@ option(WITH_EC
 if (${WITH_TLS} STREQUAL ON)
 	if (${TARGET_ANDROID} STREQUAL ON)
 		set(OPENSSL_INCLUDE_DIR ${mosquitto_SOURCE_DIR}/android/include)
-		if ("${ANDROID_ABI}" STREQUAL ARM)
+		if ("${ANDROID_ABI}" STREQUAL arm)
 			message(STATUS "ANDROID_ABI IS ARM")
 			set(OPENSSL_LIBRARIES ${mosquitto_SOURCE_DIR}/android/lib/arm/libssl.a ${mosquitto_SOURCE_DIR}/android/lib/arm/libcrypto.a)
-		elseif("${ANDROID_ABI}" STREQUAL ARM64)
+		elseif("${ANDROID_ABI}" STREQUAL arm64)
 			message(STATUS "ANDROID_ABI IS ARM64")
 			set(OPENSSL_LIBRARIES ${mosquitto_SOURCE_DIR}/android/lib/arm64/libssl.a ${mosquitto_SOURCE_DIR}/android/lib/arm64/libcrypto.a)
-		endif("${ANDROID_ABI}" STREQUAL ARM)
+		endif("${ANDROID_ABI}" STREQUAL arm)
 	else()
 		find_package(OpenSSL REQUIRED)
 	endif(${TARGET_ANDROID} STREQUAL ON)

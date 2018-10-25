@@ -33,7 +33,7 @@ public class MosquittoJNI {
 
   public native void nativeQuit();
 
-  public void onMessage(byte[] message) {
+  private void onMessage(byte[] message) {
     if (messageListener != null) {
       messageListener.onMessage(message);
     }
@@ -42,6 +42,12 @@ public class MosquittoJNI {
   private void onConnect() {
     if (messageListener != null) {
       messageListener.onConnect();
+    }
+  }
+
+  private void onDebugLog(String log) {
+    if (messageListener != null) {
+      messageListener.onDebugLog(log);
     }
   }
 

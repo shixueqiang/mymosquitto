@@ -62,6 +62,8 @@ int mqtt_unsubscribe(const char *topic)
 }
 
 int mqtt_quit() {
+	mosquitto_destroy(mosq);
+	mosquitto_lib_cleanup();
 	return 1;
 }
 
@@ -144,6 +146,7 @@ void my_subscribe_callback(struct mosquitto *mosq, void *obj, int mid, int qos_c
 void my_log_callback(struct mosquitto *mosq, void *obj, int level, const char *str)
 {
 	printf("%s\n", str);
+	log_callback(str);
 }
 
 void print_usage(void)

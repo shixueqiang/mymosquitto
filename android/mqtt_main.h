@@ -15,5 +15,6 @@ int mqtt_quit();
 
 void message_callback(const struct mosquitto_message *message);
 void connect_callback();
+void log_callback(const char *str);
 
 #endif

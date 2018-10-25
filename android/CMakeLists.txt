@@ -3,7 +3,7 @@ include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
 link_directories(${mosquitto_BINARY_DIR}/lib)
 
 set(shared_src client_shared.c client_shared.h)
-set(LOG_LIBRARIES /home/shixq/android/arm-android-toolchain/sysroot/usr/lib/liblog.so)
+set(LOG_LIBRARIES ${CMAKE_ANDROID_NDK}/platforms/android-${CMAKE_SYSTEM_VERSION}/arch-${ANDROID_ABI}/usr/lib/liblog.so)
 
 if (${WITH_SRV} STREQUAL ON)
 	add_definitions("-DWITH_SRV")

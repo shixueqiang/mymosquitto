@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 char *strdup(const char *string)
 {
@@ -25,6 +26,7 @@ static JavaVM *mJavaVM;
 static jobject mMqttObj;
 static jmethodID midOnMessage;
 static jmethodID midOnConnect;
+static jmethodID midOnDebugLog;
 
 JNIEnv *Android_JNI_GetEnv(void)
 {
@@ -59,6 +61,14 @@ void connect_callback()
 {
     JNIEnv *env = Android_JNI_GetEnv();
     (*env)->CallVoidMethod(env, mMqttObj, midOnConnect);
+}
+
+void log_callback(const char *str)
+{
+    JNIEnv *env = Android_JNI_GetEnv();
+    jstring log = (*env)->NewStringUTF(env, str);
+    (*env)->CallVoidMethod(env, mMqttObj, midOnDebugLog, log);
+    (*env)->DeleteLocalRef(env, log);
 }
 
 static void Android_JNI_ThreadDestroyed(void *value)
@@ -115,6 +125,8 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
     {
         midOnMessage = (*mEnv)->GetMethodID(mEnv, clazz, "onMessage", "([B)V");
         midOnConnect = (*mEnv)->GetMethodID(mEnv, clazz, "onConnect", "()V");
+        midOnDebugLog = (*mEnv)->GetMethodID(mEnv, clazz, "onDebugLog",
+                                             "(Ljava/lang/String;)V");
     }
     return 1;
 }
