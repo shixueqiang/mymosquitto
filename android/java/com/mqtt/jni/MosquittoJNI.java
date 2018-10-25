@@ -27,19 +27,22 @@ public class MosquittoJNI {
 
   public native int nativeRunMain(String function, Object arguments);
 
-  public native int subscribe(String[] topics);
+  public native int subscribe(String[] topics, int qos);
 
   public native int unsubscribe(String[] topics);
 
   public native void nativeQuit();
 
-  public void messageCallback(byte[] message) {
+  public void onMessage(byte[] message) {
     if (messageListener != null) {
       messageListener.onMessage(message);
     }
   }
 
-  private void logCallback(String log) {
+  private void onConnect() {
+    if (messageListener != null) {
+      messageListener.onConnect();
+    }
   }
 
   public void setMessageListener(MessageListener messageListener) {

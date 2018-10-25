@@ -51,9 +51,9 @@ void my_signal_handler(int signum)
 
 void print_message(struct mosq_config *cfg, const struct mosquitto_message *message);
 
-int mqtt_subscribe(const char *topic) 
+int mqtt_subscribe(const char *topic, int qos) 
 { 
-	return mosquitto_subscribe(mosq, NULL, topic, 1); 
+	return mosquitto_subscribe(mosq, NULL, topic, qos); 
 }
  
 int mqtt_unsubscribe(const char *topic) 
@@ -91,7 +91,7 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 	}
 
 	print_message(cfg, message);
-	mqtt_callback(message);
+	message_callback(message);
 
 	if(cfg->msg_count>0){
 		msg_count++;
@@ -117,6 +117,7 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result, int flag
 		for(i=0; i<cfg->unsub_topic_count; i++){
 			mosquitto_unsubscribe(mosq, NULL, cfg->unsub_topics[i]);
 		}
+		connect_callback();
 	}else{
 		if(result && !cfg->quiet){
 			fprintf(stderr, "%s\n", mosquitto_connack_string(result));

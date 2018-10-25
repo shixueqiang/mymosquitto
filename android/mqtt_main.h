@@ -9,10 +9,11 @@
 typedef void (*android_callback)(const struct mosquitto_message *message);
 
 int mqtt_main(int argc, char *argv[]);
-int mqtt_subscribe(const char *topic);
+int mqtt_subscribe(const char *topic, int qos);
 int mqtt_unsubscribe(const char *topic);
 int mqtt_quit();
 
-void mqtt_callback(const struct mosquitto_message *message);
+void message_callback(const struct mosquitto_message *message);
+void connect_callback();
 
 #endif

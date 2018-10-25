@@ -33,7 +33,8 @@ extern "C"
  */
   JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_subscribe(JNIEnv *,
                                                                   jobject,
-                                                                  jobjectArray);
+                                                                  jobjectArray,
+                                                                  jint);
 
   /*
  * Class:     com_mqtt_jni_MosquittoJNI
