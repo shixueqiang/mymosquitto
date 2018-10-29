@@ -9,8 +9,7 @@ public class MosquittoJNI {
     System.loadLibrary("mosquitto_sub");
   }
 
-  private MosquittoJNI() {
-  }
+  private MosquittoJNI() {}
 
   public static MosquittoJNI getInstance() {
     if (mInstance == null) {
@@ -25,7 +24,7 @@ public class MosquittoJNI {
 
   public native int nativeSetupJNI();
 
-  public native int nativeRunMain(String function, Object arguments);
+  public native int nativeRunMain(Object arguments);
 
   public native int subscribe(String[] topics, int qos);
 

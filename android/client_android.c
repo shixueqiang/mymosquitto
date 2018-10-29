@@ -3,8 +3,8 @@
 #include <jni.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 char *strdup(const char *string)
 {
@@ -46,7 +46,7 @@ JNIEnv *Android_JNI_GetEnv(void)
 void message_callback(const struct mosquitto_message *message)
 {
     char *log = message->payload;
-    LOGE("mqtt_callback %s", log);
+    LOGE("message_callback %s", log);
     const unsigned char *payload = message->payload;
     JNIEnv *env = Android_JNI_GetEnv();
     jstring topic = (*env)->NewStringUTF(env, message->topic);
@@ -61,16 +61,21 @@ void message_callback(const struct mosquitto_message *message)
 
 void connect_callback()
 {
+    LOGE("connect_callback");
     JNIEnv *env = Android_JNI_GetEnv();
     (*env)->CallVoidMethod(env, mMqttObj, midOnConnect);
 }
 
 void log_callback(const char *str)
 {
-    JNIEnv *env = Android_JNI_GetEnv();
-    jstring log = (*env)->NewStringUTF(env, str);
-    (*env)->CallVoidMethod(env, mMqttObj, midOnDebugLog, log);
-    (*env)->DeleteLocalRef(env, log);
+    LOGE("log_callback %s", str);
+    if (str)
+    {
+        JNIEnv *env = Android_JNI_GetEnv();
+        jstring log = (*env)->NewStringUTF(env, str);
+        (*env)->CallVoidMethod(env, mMqttObj, midOnDebugLog, log);
+        (*env)->DeleteLocalRef(env, log);
+    }
 }
 
 static void Android_JNI_ThreadDestroyed(void *value)
@@ -125,7 +130,8 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
     jclass clazz = (*mEnv)->FindClass(mEnv, "com/mqtt/jni/MosquittoJNI");
     if (clazz)
     {
-        midOnMessage = (*mEnv)->GetMethodID(mEnv, clazz, "onMessage", "(Ljava/lang/String;[B)V");
+        midOnMessage = (*mEnv)->GetMethodID(mEnv, clazz, "onMessage",
+                                            "(Ljava/lang/String;[B)V");
         midOnConnect = (*mEnv)->GetMethodID(mEnv, clazz, "onConnect", "()V");
         midOnDebugLog = (*mEnv)->GetMethodID(mEnv, clazz, "onDebugLog",
                                              "(Ljava/lang/String;)V");
@@ -134,7 +140,7 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
 }
 
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeRunMain(
-    JNIEnv *mEnv, jobject obj, jstring function, jobject arguments)
+    JNIEnv *mEnv, jobject obj, jobject arguments)
 {
     int status = -1;
     int i;

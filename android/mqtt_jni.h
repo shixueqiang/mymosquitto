@@ -19,11 +19,10 @@ extern "C"
   /*
  * Class:     com_mqtt_jni_MosquittoJNI
  * Method:    nativeRunMain
- * Signature: (Ljava/lang/String;Ljava/lang/Object;)I
+ * Signature: (Ljava/lang/Object;)I
  */
   JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeRunMain(JNIEnv *,
                                                                       jobject,
-                                                                      jstring,
                                                                       jobject);
 
   /*

@@ -6,6 +6,7 @@
         "jni.h": "c",
         "string.h": "c",
         "cassert": "c",
-        "mqtt_main.h": "c"
+        "mqtt_main.h": "c",
+        "client_shared.h": "c"
     }
 }
