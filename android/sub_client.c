@@ -93,7 +93,7 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 	}
 
 	print_message(cfg, message);
-	message_callback(message);
+	mqtt_message_callback(message);
 
 	if(cfg->msg_count>0){
 		msg_count++;
@@ -119,7 +119,7 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result, int flag
 		for(i=0; i<cfg->unsub_topic_count; i++){
 			mosquitto_unsubscribe(mosq, NULL, cfg->unsub_topics[i]);
 		}
-		connect_callback();
+		mqtt_connect_callback();
 	}else{
 		if(result && !cfg->quiet){
 			fprintf(stderr, "%s\n", mosquitto_connack_string(result));
@@ -146,7 +146,7 @@ void my_subscribe_callback(struct mosquitto *mosq, void *obj, int mid, int qos_c
 void my_log_callback(struct mosquitto *mosq, void *obj, int level, const char *str)
 {
 	printf("%s\n", str);
-	log_callback(str);
+	mqtt_log_callback(str);
 }
 
 void print_usage(void)
@@ -252,7 +252,6 @@ void print_usage(void)
 
 int mqtt_main(int argc, char *argv[])
 {
-	LOGE("mqtt_main");
 	struct mosq_config cfg;
 	int rc;
 #ifndef WIN32
@@ -262,7 +261,7 @@ int mqtt_main(int argc, char *argv[])
 	memset(&cfg, 0, sizeof(struct mosq_config));
 
 	rc = client_config_load(&cfg, CLIENT_SUB, argc, argv);
-	LOGE("client_config_load rc:%d", rc);
+	LOGE("mqtt_main client_config_load rc:%d", rc);
 	if(rc){
 		client_config_cleanup(&cfg);
 		if(rc == 2){
@@ -278,9 +277,7 @@ int mqtt_main(int argc, char *argv[])
 		fprintf(stderr, "\nError: Combining '-R' and '--retained-only' makes no sense.\n");
 		return 1;
 	}
-	LOGE("mqtt_main start init");
 	mosquitto_lib_init();
-	LOGE("mqtt_main end init");
 
 	if(client_id_generate(&cfg, "mosqsub")){
 		return 1;
@@ -308,7 +305,6 @@ int mqtt_main(int argc, char *argv[])
 	}
 	mosquitto_connect_with_flags_callback_set(mosq, my_connect_callback);
 	mosquitto_message_callback_set(mosq, my_message_callback);
-	LOGE("mqtt_main connect");
 	rc = client_connect(mosq, &cfg);
 	LOGE("mqtt_main connect rc %d", rc);
 	if(rc) return rc;

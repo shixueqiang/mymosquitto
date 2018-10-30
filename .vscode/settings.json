@@ -7,6 +7,9 @@
         "string.h": "c",
         "cassert": "c",
         "mqtt_main.h": "c",
-        "client_shared.h": "c"
+        "client_shared.h": "c",
+        "mqtt_sub.h": "c",
+        "system_error": "c",
+        "mqtt_pub.h": "c"
     }
 }

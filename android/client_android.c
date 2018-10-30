@@ -1,4 +1,4 @@
-#include "mqtt_jni.h"
+#include "main_jni.h"
 #include "mqtt_main.h"
 #include <jni.h>
 #include <pthread.h>
@@ -27,6 +27,7 @@ static jobject mMqttObj;
 static jmethodID midOnMessage;
 static jmethodID midOnConnect;
 static jmethodID midOnDebugLog;
+static jmethodID midOnPublishEnd;
 
 JNIEnv *Android_JNI_GetEnv(void)
 {
@@ -43,10 +44,10 @@ JNIEnv *Android_JNI_GetEnv(void)
     return env;
 }
 
-void message_callback(const struct mosquitto_message *message)
+void mqtt_message_callback(const struct mosquitto_message *message)
 {
     char *log = message->payload;
-    LOGE("message_callback %s", log);
+    LOGE("mqtt_message_callback %s", log);
     const unsigned char *payload = message->payload;
     JNIEnv *env = Android_JNI_GetEnv();
     jstring topic = (*env)->NewStringUTF(env, message->topic);
@@ -59,23 +60,29 @@ void message_callback(const struct mosquitto_message *message)
     (*env)->DeleteLocalRef(env, topic);
 }
 
-void connect_callback()
+void mqtt_connect_callback()
 {
-    LOGE("connect_callback");
+    LOGE("mqtt_connect_callback");
     JNIEnv *env = Android_JNI_GetEnv();
     (*env)->CallVoidMethod(env, mMqttObj, midOnConnect);
 }
 
-void log_callback(const char *str)
+void mqtt_log_callback(const char *str)
 {
-    LOGE("log_callback %s", str);
-    if (str)
-    {
-        JNIEnv *env = Android_JNI_GetEnv();
-        jstring log = (*env)->NewStringUTF(env, str);
-        (*env)->CallVoidMethod(env, mMqttObj, midOnDebugLog, log);
-        (*env)->DeleteLocalRef(env, log);
-    }
+    LOGE("mqtt_log_callback %s", str);
+    JNIEnv *env = Android_JNI_GetEnv();
+    jstring log = (*env)->NewStringUTF(env, str);
+    (*env)->CallVoidMethod(env, mMqttObj, midOnDebugLog, log);
+    (*env)->DeleteLocalRef(env, log);
+}
+
+void mqtt_publish_callback(const char *topic)
+{
+    LOGE("mqtt_publish_callback %s", topic);
+    JNIEnv *env = Android_JNI_GetEnv();
+    jstring jtopic = (*env)->NewStringUTF(env, topic);
+    (*env)->CallVoidMethod(env, mMqttObj, midOnDebugLog, jtopic);
+    (*env)->DeleteLocalRef(env, jtopic);
 }
 
 static void Android_JNI_ThreadDestroyed(void *value)
@@ -135,6 +142,8 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
         midOnConnect = (*mEnv)->GetMethodID(mEnv, clazz, "onConnect", "()V");
         midOnDebugLog = (*mEnv)->GetMethodID(mEnv, clazz, "onDebugLog",
                                              "(Ljava/lang/String;)V");
+        midOnPublishEnd = (*mEnv)->GetMethodID(mEnv, clazz, "onPublishEnd",
+                                               "(Ljava/lang/String;)V");
     }
     return 1;
 }
@@ -230,6 +239,50 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_unsubscribe(
             }
             (*mEnv)->DeleteLocalRef(mEnv, string);
         }
+    }
+    return status;
+}
+
+JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_publish(
+    JNIEnv *mEnv, jobject obj, jobject arguments)
+{
+    int status = -1;
+    int i;
+    int argc;
+    int len;
+
+    /* Prepare the arguments. */
+    len = (*mEnv)->GetArrayLength(mEnv, arguments);
+    char *argv[len];
+    argc = 0;
+    LOGE("publish len %d", len);
+    for (i = 0; i < len; ++i)
+    {
+        const char *utf;
+        char *arg = NULL;
+        jstring string = (*mEnv)->GetObjectArrayElement(mEnv, arguments, i);
+        if (string)
+        {
+            utf = (*mEnv)->GetStringUTFChars(mEnv, string, 0);
+            if (utf)
+            {
+                arg = strdup(utf);
+                (*mEnv)->ReleaseStringUTFChars(mEnv, string, utf);
+            }
+            (*mEnv)->DeleteLocalRef(mEnv, string);
+        }
+        if (!arg)
+        {
+            arg = strdup("");
+        }
+        argv[argc++] = arg;
+    }
+    status = mqtt_publish(argc, argv);
+
+    /* Release the arguments. */
+    for (i = 0; i < argc; ++i)
+    {
+        free(argv[i]);
     }
     return status;
 }

@@ -9,7 +9,8 @@ public class MosquittoJNI {
     System.loadLibrary("mosquitto_sub");
   }
 
-  private MosquittoJNI() {}
+  private MosquittoJNI() {
+  }
 
   public static MosquittoJNI getInstance() {
     if (mInstance == null) {
@@ -30,6 +31,8 @@ public class MosquittoJNI {
 
   public native int unsubscribe(String[] topics);
 
+  public native int publish(Object arguments);
+
   public native void nativeQuit();
 
   private void onMessage(String topic, byte[] message) {
@@ -47,6 +50,12 @@ public class MosquittoJNI {
   private void onDebugLog(String log) {
     if (messageListener != null) {
       messageListener.onDebugLog(log);
+    }
+  }
+
+  private void onPublishEnd(String topic) {
+    if(messageListener != null) {
+      messageListener.onPublishEnd(topic);
     }
   }
 
