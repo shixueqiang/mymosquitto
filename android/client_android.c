@@ -81,7 +81,7 @@ void mqtt_publish_callback(const char *topic)
     LOGE("mqtt_publish_callback %s", topic);
     JNIEnv *env = Android_JNI_GetEnv();
     jstring jtopic = (*env)->NewStringUTF(env, topic);
-    (*env)->CallVoidMethod(env, mMqttObj, midOnDebugLog, jtopic);
+    (*env)->CallVoidMethod(env, mMqttObj, midOnPublishEnd, jtopic);
     (*env)->DeleteLocalRef(env, jtopic);
 }
 
@@ -244,46 +244,14 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_unsubscribe(
 }
 
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_publish(
-    JNIEnv *mEnv, jobject obj, jobject arguments)
+    JNIEnv *mEnv, jobject obj, jstring jtopic, jstring jmessage, jint qos)
 {
-    int status = -1;
-    int i;
-    int argc;
-    int len;
-
-    /* Prepare the arguments. */
-    len = (*mEnv)->GetArrayLength(mEnv, arguments);
-    char *argv[len];
-    argc = 0;
-    LOGE("publish len %d", len);
-    for (i = 0; i < len; ++i)
-    {
-        const char *utf;
-        char *arg = NULL;
-        jstring string = (*mEnv)->GetObjectArrayElement(mEnv, arguments, i);
-        if (string)
-        {
-            utf = (*mEnv)->GetStringUTFChars(mEnv, string, 0);
-            if (utf)
-            {
-                arg = strdup(utf);
-                (*mEnv)->ReleaseStringUTFChars(mEnv, string, utf);
-            }
-            (*mEnv)->DeleteLocalRef(mEnv, string);
-        }
-        if (!arg)
-        {
-            arg = strdup("");
-        }
-        argv[argc++] = arg;
-    }
-    status = mqtt_publish(argc, argv);
-
-    /* Release the arguments. */
-    for (i = 0; i < argc; ++i)
-    {
-        free(argv[i]);
-    }
+    int status = 0;
+    const char *topic = (*mEnv)->GetStringUTFChars(mEnv, jtopic, JNI_FALSE);
+    const char *message = (*mEnv)->GetStringUTFChars(mEnv, jmessage, JNI_FALSE);
+    mqtt_publish(topic, message, qos);
+    (*mEnv)->ReleaseStringUTFChars(mEnv, jtopic, topic);
+    (*mEnv)->ReleaseStringUTFChars(mEnv, jmessage, message);
     return status;
 }
 

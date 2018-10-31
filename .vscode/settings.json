@@ -10,6 +10,8 @@
         "client_shared.h": "c",
         "mqtt_sub.h": "c",
         "system_error": "c",
-        "mqtt_pub.h": "c"
+        "mqtt_pub.h": "c",
+        "persist.h": "c",
+        "uthash.h": "c"
     }
 }

@@ -9,6 +9,6 @@ if (${WITH_SRV} STREQUAL ON)
 	add_definitions("-DWITH_SRV")
 endif (${WITH_SRV} STREQUAL ON)
 
-add_library(mqtt SHARED sub_client.c sub_client_output.c pub_client.c client_android.c ${shared_src})
+add_library(mqtt SHARED sub_client.c sub_client_output.c client_android.c ${shared_src})
 
 target_link_libraries(mqtt libmosquitto ${LOG_LIBRARIES})

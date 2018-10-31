@@ -31,7 +31,6 @@ Contributors:
 
 #include <mosquitto.h>
 #include "client_shared.h"
-#include "mqtt_main.h"
 
 #define STATUS_CONNECTING 0
 #define STATUS_CONNACK_RECVD 1
@@ -56,10 +55,10 @@ static char *password = NULL;
 static bool disconnect_sent = false;
 static bool quiet = false;
 
-void pub_connect_callback(struct mosquitto *mosq, void *obj, int result)
+void my_connect_callback(struct mosquitto *mosq, void *obj, int result)
 {
 	int rc = MOSQ_ERR_SUCCESS;
-	LOGE("pub_connect_callback rc %d", rc);
+
 	if(!result){
 		switch(mode){
 			case MSGMODE_CMD:
@@ -103,13 +102,12 @@ void pub_connect_callback(struct mosquitto *mosq, void *obj, int result)
 	}
 }
 
-void pub_disconnect_callback(struct mosquitto *mosq, void *obj, int rc)
+void my_disconnect_callback(struct mosquitto *mosq, void *obj, int rc)
 {
 	connected = false;
-	mqtt_publish_callback(topic);
 }
 
-void pub_publish_callback(struct mosquitto *mosq, void *obj, int mid)
+void my_publish_callback(struct mosquitto *mosq, void *obj, int mid)
 {
 	last_mid_sent = mid;
 	if(mode == MSGMODE_STDIN_LINE){
@@ -123,10 +121,9 @@ void pub_publish_callback(struct mosquitto *mosq, void *obj, int mid)
 	}
 }
 
-void pub_log_callback(struct mosquitto *mosq, void *obj, int level, const char *str)
+void my_log_callback(struct mosquitto *mosq, void *obj, int level, const char *str)
 {
 	printf("%s\n", str);
-	mqtt_log_callback(str);
 }
 
 int load_stdin(void)
@@ -203,7 +200,7 @@ int load_file(const char *filename)
 	return 0;
 }
 
-void pub_print_usage(void)
+void print_usage(void)
 {
 	int major, minor, revision;
 
@@ -296,7 +293,7 @@ void pub_print_usage(void)
 	printf("\nSee http://mosquitto.org/ for more information.\n\n");
 }
 
-int mqtt_publish(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	struct mosq_config cfg;
 	struct mosquitto *mosq = NULL;
@@ -316,12 +313,11 @@ int mqtt_publish(int argc, char *argv[])
 
 	memset(&cfg, 0, sizeof(struct mosq_config));
 	rc = client_config_load(&cfg, CLIENT_PUB, argc, argv);
-	LOGE("mqtt_publish client_config_load rc:%d", rc);
 	if(rc){
 		client_config_cleanup(&cfg);
 		if(rc == 2){
 			/* --help */
-			pub_print_usage();
+			print_usage();
 		}else{
 			fprintf(stderr, "\nUse 'mosquitto_pub --help' to see usage.\n");
 		}
@@ -363,7 +359,7 @@ int mqtt_publish(int argc, char *argv[])
 
 	if(!topic || mode == MSGMODE_NONE){
 		fprintf(stderr, "Error: Both topic and message must be supplied.\n");
-		pub_print_usage();
+		print_usage();
 		free(buf);
 		return 1;
 	}
@@ -391,18 +387,17 @@ int mqtt_publish(int argc, char *argv[])
 		return 1;
 	}
 	if(cfg.debug){
-		mosquitto_log_callback_set(mosq, pub_log_callback);
+		mosquitto_log_callback_set(mosq, my_log_callback);
 	}
-	mosquitto_connect_callback_set(mosq, pub_connect_callback);
-	mosquitto_disconnect_callback_set(mosq, pub_disconnect_callback);
-	mosquitto_publish_callback_set(mosq, pub_publish_callback);
+	mosquitto_connect_callback_set(mosq, my_connect_callback);
+	mosquitto_disconnect_callback_set(mosq, my_disconnect_callback);
+	mosquitto_publish_callback_set(mosq, my_publish_callback);
 
 	if(client_opts_set(mosq, &cfg)){
 		free(buf);
 		return 1;
 	}
 	rc = client_connect(mosq, &cfg);
-	LOGE("mqtt_publish connect rc %d", rc);
 	if(rc) return rc;
 
 	if(mode == MSGMODE_STDIN_LINE){

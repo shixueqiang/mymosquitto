@@ -61,6 +61,13 @@ int mqtt_unsubscribe(const char *topic)
 	return mosquitto_unsubscribe(mosq, NULL, topic); 
 }
 
+int mqtt_publish(const char *topic, const void *payload, int qos)
+{
+	int mid_sent = 0;
+	int msglen = strlen(payload);
+	return mosquitto_publish(mosq, &mid_sent, topic, msglen, payload, qos, 0);
+}
+
 int mqtt_quit() {
 	mosquitto_destroy(mosq);
 	mosquitto_lib_cleanup();
@@ -141,6 +148,15 @@ void my_subscribe_callback(struct mosquitto *mosq, void *obj, int mid, int qos_c
 		if(!cfg->quiet) printf(", %d", granted_qos[i]);
 	}
 	if(!cfg->quiet) printf("\n");
+}
+
+void my_publish_callback(struct mosquitto *mosq, void *obj, int mid)
+{
+	struct mosq_config *cfg;
+
+	assert(obj);
+	cfg = (struct mosq_config *)obj;
+	mqtt_publish_callback(cfg->topic);
 }
 
 void my_log_callback(struct mosquitto *mosq, void *obj, int level, const char *str)
@@ -305,6 +321,7 @@ int mqtt_main(int argc, char *argv[])
 	}
 	mosquitto_connect_with_flags_callback_set(mosq, my_connect_callback);
 	mosquitto_message_callback_set(mosq, my_message_callback);
+	mosquitto_publish_callback_set(mosq, my_publish_callback);
 	rc = client_connect(mosq, &cfg);
 	LOGE("mqtt_main connect rc %d", rc);
 	if(rc) return rc;

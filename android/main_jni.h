@@ -42,10 +42,10 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_unsubscribe
 /*
  * Class:     com_mqtt_jni_MosquittoJNI
  * Method:    publish
- * Signature: (Ljava/lang/Object;)I
+ * Signature: (Ljava/lang/String;Ljava/lang/String;I)I
  */
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_publish
-  (JNIEnv *, jobject, jobject);
+  (JNIEnv *, jobject, jstring, jstring, jint);
 
 /*
  * Class:     com_mqtt_jni_MosquittoJNI
