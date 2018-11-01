@@ -17,6 +17,5 @@ int mqtt_quit();
 void mqtt_message_callback(const struct mosquitto_message *message);
 void mqtt_connect_callback();
 void mqtt_log_callback(const char *str);
-void mqtt_publish_callback(const char *topic);
 
 #endif

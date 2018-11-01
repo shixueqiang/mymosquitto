@@ -12,6 +12,9 @@
         "system_error": "c",
         "mqtt_pub.h": "c",
         "persist.h": "c",
-        "uthash.h": "c"
+        "uthash.h": "c",
+        "mqtt3_protocol.h": "c",
+        "signal.h": "c",
+        "unistd.h": "c"
     }
 }

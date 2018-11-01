@@ -63,7 +63,15 @@ int mosquitto_loop_stop(struct mosquitto *mosq, bool force)
 	}
 	
 	if(force){
+#ifdef TARGET_ANDROID
+		int status;
+		if ((status = pthread_kill(mosq->thread_id, SIGUSR1)) != 0) 
+		{ 
+    		printf("Error cancelling thread %d, error = %d", mosq->thread_id, status);
+		} 
+#else
 		pthread_cancel(mosq->thread_id);
+#endif
 	}
 	pthread_join(mosq->thread_id, NULL);
 	mosq->thread_id = pthread_self();

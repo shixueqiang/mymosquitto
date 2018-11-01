@@ -27,7 +27,6 @@ static jobject mMqttObj;
 static jmethodID midOnMessage;
 static jmethodID midOnConnect;
 static jmethodID midOnDebugLog;
-static jmethodID midOnPublishEnd;
 
 JNIEnv *Android_JNI_GetEnv(void)
 {
@@ -74,15 +73,6 @@ void mqtt_log_callback(const char *str)
     jstring log = (*env)->NewStringUTF(env, str);
     (*env)->CallVoidMethod(env, mMqttObj, midOnDebugLog, log);
     (*env)->DeleteLocalRef(env, log);
-}
-
-void mqtt_publish_callback(const char *topic)
-{
-    LOGE("mqtt_publish_callback %s", topic);
-    JNIEnv *env = Android_JNI_GetEnv();
-    jstring jtopic = (*env)->NewStringUTF(env, topic);
-    (*env)->CallVoidMethod(env, mMqttObj, midOnPublishEnd, jtopic);
-    (*env)->DeleteLocalRef(env, jtopic);
 }
 
 static void Android_JNI_ThreadDestroyed(void *value)
@@ -142,8 +132,6 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
         midOnConnect = (*mEnv)->GetMethodID(mEnv, clazz, "onConnect", "()V");
         midOnDebugLog = (*mEnv)->GetMethodID(mEnv, clazz, "onDebugLog",
                                              "(Ljava/lang/String;)V");
-        midOnPublishEnd = (*mEnv)->GetMethodID(mEnv, clazz, "onPublishEnd",
-                                               "(Ljava/lang/String;)V");
     }
     return 1;
 }

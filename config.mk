@@ -31,6 +31,8 @@ WITH_TLS_PSK:=yes
 # Comment out to disable client threading support.
 WITH_THREADING:=yes
 
+TARGET_ANDROID:=yes
+
 # Comment out to remove bridge support from the broker. This allow the broker
 # to connect to other brokers and subscribe/publish to topics. You probably
 # want to leave this included unless you want to save a very small amount of
@@ -199,6 +201,12 @@ ifeq ($(WITH_THREADING),yes)
 	LIB_CFLAGS:=$(LIB_CFLAGS) -DWITH_THREADING
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_THREADING
 endif
+
+ifeq ($(TARGET_ANDROID),yes)
+	LIB_CFLAGS:=$(LIB_CFLAGS) -DTARGET_ANDROID
+	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DTARGET_ANDROID
+endif
+
 
 ifeq ($(WITH_SOCKS),yes)
 	LIB_CFLAGS:=$(LIB_CFLAGS) -DWITH_SOCKS

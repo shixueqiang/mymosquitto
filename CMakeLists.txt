@@ -45,6 +45,7 @@ endif (WIN32)
 
 option(TARGET_ANDROID "Build for ANDROID?" OFF)
 if(${TARGET_ANDROID} STREQUAL ON)
+	add_definitions("-DTARGET_ANDROID")
 	message(STATUS "target system android")
 	# Android 5.0 以上需要在此处设置 PIE
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIE")

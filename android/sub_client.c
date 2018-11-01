@@ -47,6 +47,12 @@ void my_signal_handler(int signum)
 		mosquitto_disconnect(mosq);
 	}
 }
+
+void thread_exit_handler(int sig)
+{ 
+    printf("this signal is %d \n", sig);
+    pthread_exit(0);
+}
 #endif
 
 void print_message(struct mosq_config *cfg, const struct mosquitto_message *message);
@@ -65,7 +71,9 @@ int mqtt_publish(const char *topic, const void *payload, int qos)
 {
 	int mid_sent = 0;
 	int msglen = strlen(payload);
-	return mosquitto_publish(mosq, &mid_sent, topic, msglen, payload, qos, 0);
+	int status = mosquitto_publish(mosq, &mid_sent, topic, msglen, payload, qos, 0);
+	LOGE("mqtt_publish mid_send %d", mid_sent);
+	return status;
 }
 
 int mqtt_quit() {
@@ -152,11 +160,7 @@ void my_subscribe_callback(struct mosquitto *mosq, void *obj, int mid, int qos_c
 
 void my_publish_callback(struct mosquitto *mosq, void *obj, int mid)
 {
-	struct mosq_config *cfg;
-
-	assert(obj);
-	cfg = (struct mosq_config *)obj;
-	mqtt_publish_callback(cfg->topic);
+	LOGE("my_publish_callback mid %d", mid);
 }
 
 void my_log_callback(struct mosquitto *mosq, void *obj, int level, const char *str)
@@ -338,6 +342,16 @@ int mqtt_main(int argc, char *argv[])
 
 	if(cfg.timeout){
 		alarm(cfg.timeout);
+	}
+
+	struct sigaction actions;
+	memset(&actions, 0, sizeof(actions)); 
+	sigemptyset(&actions.sa_mask);
+	actions.sa_flags = 0; 
+	actions.sa_handler = thread_exit_handler;
+	if(sigaction(SIGUSR1,&actions,NULL) == -1){
+		perror("sigaction");
+		return 1;
 	}
 #endif
 
