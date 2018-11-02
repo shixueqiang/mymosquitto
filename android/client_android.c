@@ -232,14 +232,17 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_unsubscribe(
 }
 
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_publish(
-    JNIEnv *mEnv, jobject obj, jstring jtopic, jstring jmessage, jint qos)
+    JNIEnv *mEnv, jobject obj, jstring jtopic, jbyteArray jmessage, jint qos)
 {
     int status = 0;
     const char *topic = (*mEnv)->GetStringUTFChars(mEnv, jtopic, JNI_FALSE);
-    const char *message = (*mEnv)->GetStringUTFChars(mEnv, jmessage, JNI_FALSE);
-    mqtt_publish(topic, message, qos);
+    int len = (*mEnv)->GetArrayLength(mEnv, jmessage);
+    unsigned char *message = (char *)malloc(sizeof(char) * (len + 1));
+    memset(message, 0, sizeof(char) * (len + 1));
+    (*mEnv)->GetByteArrayRegion(mEnv, jmessage, 0, len, (jbyte *)message);
+    status = mqtt_publish(topic, message, qos);
     (*mEnv)->ReleaseStringUTFChars(mEnv, jtopic, topic);
-    (*mEnv)->ReleaseStringUTFChars(mEnv, jmessage, message);
+    free(message);
     return status;
 }
 

@@ -31,7 +31,7 @@ WITH_TLS_PSK:=yes
 # Comment out to disable client threading support.
 WITH_THREADING:=yes
 
-TARGET_ANDROID:=yes
+TARGET_ANDROID:=no
 
 # Comment out to remove bridge support from the broker. This allow the broker
 # to connect to other brokers and subscribe/publish to topics. You probably

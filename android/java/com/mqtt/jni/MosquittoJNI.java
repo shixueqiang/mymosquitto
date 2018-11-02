@@ -31,7 +31,7 @@ public class MosquittoJNI {
 
     public native int unsubscribe(String[] topics);
 
-    public native int publish(String topic, String message, int qos);
+    public native int publish(String topic, byte[] message, int qos);
 
     public native void nativeQuit();
 
@@ -50,12 +50,6 @@ public class MosquittoJNI {
     private void onDebugLog(String log) {
         if (messageListener != null) {
             messageListener.onDebugLog(log);
-        }
-    }
-
-    private void onPublishEnd(String topic) {
-        if (messageListener != null) {
-            messageListener.onPublishEnd(topic);
         }
     }
 
