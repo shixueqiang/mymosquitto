@@ -31,8 +31,11 @@ WITH_TLS_PSK:=yes
 # Comment out to disable client threading support.
 WITH_THREADING:=yes
 
+<<<<<<< HEAD
 TARGET_ANDROID:=no
 
+=======
+>>>>>>> mosquitto
 # Comment out to remove bridge support from the broker. This allow the broker
 # to connect to other brokers and subscribe/publish to topics. You probably
 # want to leave this included unless you want to save a very small amount of
@@ -88,6 +91,12 @@ WITH_STRIP:=no
 # Build static libraries
 WITH_STATIC_LIBRARIES:=no
 
+<<<<<<< HEAD
+=======
+# Build shared libraries
+WITH_SHARED_LIBRARIES:=yes
+
+>>>>>>> mosquitto
 # Build with async dns lookup support for bridges (temporary). Requires glibc.
 #WITH_ADNS:=yes
 
@@ -104,7 +113,11 @@ WITH_BUNDLED_DEPS:=yes
 
 # Also bump lib/mosquitto.h, CMakeLists.txt,
 # installer/mosquitto.nsi, installer/mosquitto64.nsi
+<<<<<<< HEAD
 VERSION=1.5.3
+=======
+VERSION=1.5.4
+>>>>>>> mosquitto
 
 # Client library SO version. Bump if incompatible API/ABI changes are made.
 SOVERSION=1
@@ -148,7 +161,14 @@ ifeq ($(UNAME),Linux)
 	LIB_LIBS:=$(LIB_LIBS) -lrt
 endif
 
+<<<<<<< HEAD
 CLIENT_LDFLAGS:=$(LDFLAGS) -L../lib ../lib/libmosquitto.so.${SOVERSION}
+=======
+CLIENT_LDFLAGS:=$(LDFLAGS) -L../lib
+ifeq ($(WITH_SHARED_LIBRARIES),yes)
+	CLIENT_LDFLAGS:=${CLIENT_LDFLAGS} ../lib/libmosquitto.so.${SOVERSION}
+endif
+>>>>>>> mosquitto
 
 ifeq ($(UNAME),SunOS)
 	ifeq ($(CC),cc)
@@ -202,12 +222,15 @@ ifeq ($(WITH_THREADING),yes)
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_THREADING
 endif
 
+<<<<<<< HEAD
 ifeq ($(TARGET_ANDROID),yes)
 	LIB_CFLAGS:=$(LIB_CFLAGS) -DTARGET_ANDROID
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DTARGET_ANDROID
 endif
 
 
+=======
+>>>>>>> mosquitto
 ifeq ($(WITH_SOCKS),yes)
 	LIB_CFLAGS:=$(LIB_CFLAGS) -DWITH_SOCKS
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_SOCKS

@@ -2,32 +2,6 @@ option(WITH_STATIC_LIBRARIES "Build static versions of the libmosquitto/pp libra
 option(WITH_PIC "Build the static library with PIC (Position Independent Code) enabled archives?" OFF)
 add_subdirectory(cpp)
 
-option(WITH_THREADING "Include client library threading support?" ON)
-if (${WITH_THREADING} STREQUAL ON)
-	add_definitions("-DWITH_THREADING")
-	if (WIN32)
-		if (CMAKE_CL_64)
-			set (PTHREAD_LIBRARIES C:\\pthreads\\Pre-built.2\\lib\\x64\\pthreadVC2.lib)
-		else (CMAKE_CL_64)
-			set (PTHREAD_LIBRARIES C:\\pthreads\\Pre-built.2\\lib\\x86\\pthreadVC2.lib)
-		endif (CMAKE_CL_64)
-		set (PTHREAD_INCLUDE_DIR C:\\pthreads\\Pre-built.2\\include)
-	elseif(${TARGET_ANDROID} STREQUAL ON)
-		# set (PTHREAD_LIBRARIES stdc++)
-	else ()
-		find_library(LIBPTHREAD pthread)
-		if (LIBPTHREAD)
-			set (PTHREAD_LIBRARIES pthread)
-		else (LIBPTHREAD)
-			set (PTHREAD_LIBRARIES "")
-		endif()
-		set (PTHREAD_INCLUDE_DIR "")
-	endif (WIN32)
-else (${WITH_THREADING} STREQUAL ON)
-	set (PTHREAD_LIBRARIES "")
-	set (PTHREAD_INCLUDE_DIR "")
-endif (${WITH_THREADING} STREQUAL ON)
-
 include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
 			${STDBOOL_H_PATH} ${STDINT_H_PATH}
 			${OPENSSL_INCLUDE_DIR} ${PTHREAD_INCLUDE_DIR})
@@ -72,7 +46,6 @@ set(C_SRC
 	utf8_mosq.c
 	util_mosq.c util_mosq.h
 	will_mosq.c will_mosq.h)
-	
 set (LIBRARIES ${OPENSSL_LIBRARIES} ${PTHREAD_LIBRARIES})
 
 if (UNIX AND NOT APPLE)
