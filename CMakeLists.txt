@@ -44,6 +44,7 @@ else (WIN32)
 endif (WIN32)
 
 option(TARGET_ANDROID "Build for ANDROID?" OFF)
+option(TARGET_IOS "Build for IOS?" OFF)
 if(${TARGET_ANDROID} STREQUAL ON)
 	add_definitions("-DTARGET_ANDROID")
 	message(STATUS "target system android")
