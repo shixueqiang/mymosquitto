@@ -108,6 +108,10 @@ if(${TARGET_ANDROID} STREQUAL ON)
 	set_target_properties(libmosquitto PROPERTIES
 		OUTPUT_NAME mosquitto
 	)
+elseif(${TARGET_IOS} STREQUAL ON)
+	set_target_properties(libmosquitto PROPERTIES
+		OUTPUT_NAME mosquitto
+	)
 else(${TARGET_ANDROID} STREQUAL ON)
 	set_target_properties(libmosquitto PROPERTIES
 		OUTPUT_NAME mosquitto
