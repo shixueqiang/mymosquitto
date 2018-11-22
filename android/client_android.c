@@ -124,7 +124,8 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
 {
     LOGE("nativeSetupJNI");
     mMqttObj = (jobject)((*mEnv)->NewGlobalRef(mEnv, obj));
-    jclass clazz = (*mEnv)->FindClass(mEnv, "com/mqtt/jni/MosquittoJNI");
+    jclass clazz = (*mEnv)->GetObjectClass(mEnv,obj);
+    // jclass clazz = (*mEnv)->FindClass(mEnv, "com/mqtt/jni/MosquittoJNI");
     if (clazz)
     {
         midOnMessage = (*mEnv)->GetMethodID(mEnv, clazz, "onMessage",

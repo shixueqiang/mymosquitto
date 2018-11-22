@@ -1,0 +1,16 @@
+include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
+			${STDBOOL_H_PATH} ${STDINT_H_PATH})
+link_directories(${mosquitto_BINARY_DIR}/lib)
+
+set(shared_src client_shared.c client_shared.h)
+
+if (${WITH_SRV} STREQUAL ON)
+	add_definitions("-DWITH_SRV")
+endif (${WITH_SRV} STREQUAL ON)
+
+add_library(mosquitto_pub pub_client.c ${shared_src})
+add_library(mosquitto_sub sub_client.c sub_client_output.c ${shared_src})
+
+target_link_libraries(mosquitto_pub libmosquitto)
+target_link_libraries(mosquitto_sub libmosquitto)
+
