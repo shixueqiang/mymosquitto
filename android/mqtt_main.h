@@ -14,12 +14,12 @@
 typedef void (*android_callback)(const struct mosquitto_message *message);
 typedef struct
 {
-    uint8_t msg_type;/* 消息类型*/
-    uint16_t msg_seq;/* 序号，每次+1*/
-    uint32_t msg_time;/* 时间戳*/
-    uint16_t msg_id_len;/* 消息id长度*/
-    char* msg_id;/* 消息id*/
-    char* msg_payload;/* 消息体*/
+    uint8_t msg_type;    /* 消息类型*/
+    uint16_t msg_seq;    /* 序号，每次+1*/
+    uint32_t msg_time;   /* 时间戳*/
+    uint16_t msg_id_len; /* 消息id长度*/
+    char *msg_id;        /* 消息id*/
+    char *msg_payload;   /* 消息体*/
 } mqtt_message;
 
 int mqtt_main(int argc, char *argv[]);
