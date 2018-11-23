@@ -281,7 +281,6 @@ int mqtt_main(int argc, char *argv[])
 	memset(&cfg, 0, sizeof(struct mosq_config));
 
 	rc = client_config_load(&cfg, CLIENT_SUB, argc, argv);
-	LOGE("mqtt_main client_config_load rc:%d", rc);
 	if(rc){
 		client_config_cleanup(&cfg);
 		if(rc == 2){
@@ -297,6 +296,7 @@ int mqtt_main(int argc, char *argv[])
 		fprintf(stderr, "\nError: Combining '-R' and '--retained-only' makes no sense.\n");
 		return 1;
 	}
+
 	mosquitto_lib_init();
 
 	if(client_id_generate(&cfg, "mosqsub")){
@@ -324,10 +324,10 @@ int mqtt_main(int argc, char *argv[])
 		mosquitto_subscribe_callback_set(mosq, my_subscribe_callback);
 	}
 	mosquitto_connect_with_flags_callback_set(mosq, my_connect_callback);
-	mosquitto_message_callback_set(mosq, my_message_callback);
 	mosquitto_publish_callback_set(mosq, my_publish_callback);
+	mosquitto_message_callback_set(mosq, my_message_callback);
+
 	rc = client_connect(mosq, &cfg);
-	LOGE("mqtt_main connect rc %d", rc);
 	if(rc) return rc;
 
 #ifndef WIN32
