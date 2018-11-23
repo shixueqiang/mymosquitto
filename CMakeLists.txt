@@ -130,6 +130,7 @@ option(DOCUMENTATION "Build documentation?" ON)
 # Include projects
 # ========================================
 add_subdirectory(lib)
+add_subdirectory(msgpack)
 if(${TARGET_ANDROID} STREQUAL ON)
 	add_subdirectory(android)
 elseif(${TARGET_IOS} STREQUAL ON)

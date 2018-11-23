@@ -38,6 +38,7 @@ Contributors:
 bool process_messages = true;
 int msg_count = 0;
 struct mosquitto *mosq = NULL;
+char* global_client_id = NULL;
 
 #ifndef WIN32
 void my_signal_handler(int signum)
@@ -67,11 +68,35 @@ int mqtt_unsubscribe(const char *topic)
 	return mosquitto_unsubscribe(mosq, NULL, topic); 
 }
 
+uint32_t get_current_time()  
+{  
+   struct timeval tv;  
+   gettimeofday(&tv,NULL);  
+   return tv.tv_sec * 1000 + tv.tv_usec / 1000;  
+}  
+
 int mqtt_publish(const char *topic, const void *payload, int qos)
 {
-	int mid_sent = 0;
+	int mid_sent;
 	int msglen = strlen(payload);
-	int status = mosquitto_publish(mosq, &mid_sent, topic, msglen, payload, qos, 0);
+	LOGE("mqtt_message init");
+	mqtt_message *message = (mqtt_message *)malloc(sizeof(mqtt_message));
+    memset(message, 0, sizeof(mqtt_message));
+	message->msg_type = MQTT_MESSAGE_TEXT;
+	message->msg_timestamp = get_current_time();
+	message->client_id = global_client_id;
+	message->topic = topic;
+	char str[32];
+	sprintf(str, "%d", message->msg_timestamp);
+	message->msg_id = str;
+	message->msg_payload = payload;
+	LOGE("mqtt_message start pack");
+	msgpack_sbuffer *sbuf = (msgpack_sbuffer *)malloc(sizeof(msgpack_sbuffer));
+	/* msgpack::sbuffer is a simple buffer implementation. */
+	msgpack_sbuffer_init(sbuf);
+	pack_message(message, sbuf);
+	LOGE("mqtt_message pack success");
+	int status = mosquitto_publish(mosq, &mid_sent, topic, msglen, sbuf->data, qos, 0);
 	LOGE("mqtt_publish mid_send %d", mid_sent);
 	return status;
 }
@@ -279,9 +304,10 @@ int mqtt_main(int argc, char *argv[])
 #endif
 	
 	memset(&cfg, 0, sizeof(struct mosq_config));
-
+	LOGE("client_config_load start\n");
 	rc = client_config_load(&cfg, CLIENT_SUB, argc, argv);
 	if(rc){
+		LOGE("client_config_load error %d\n", rc);
 		client_config_cleanup(&cfg);
 		if(rc == 2){
 			/* --help */
@@ -291,6 +317,9 @@ int mqtt_main(int argc, char *argv[])
 		}
 		return 1;
 	}
+
+	LOGE("mqtt_main client_config_load success id is %s\n", cfg.id);
+	global_client_id = cfg.id;
 
 	if(cfg.no_retain && cfg.retained_only){
 		fprintf(stderr, "\nError: Combining '-R' and '--retained-only' makes no sense.\n");
@@ -328,6 +357,7 @@ int mqtt_main(int argc, char *argv[])
 	mosquitto_message_callback_set(mosq, my_message_callback);
 
 	rc = client_connect(mosq, &cfg);
+	LOGE("mqtt_main connect rc is %d\n", rc);
 	if(rc) return rc;
 
 #ifndef WIN32

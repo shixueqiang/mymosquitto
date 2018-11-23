@@ -1,4 +1,4 @@
-#include "main_jni.h"
+#include "mqtt_jni.h"
 #include "mqtt_main.h"
 #include <jni.h>
 #include <pthread.h>
@@ -43,14 +43,19 @@ JNIEnv *Android_JNI_GetEnv(void)
     return env;
 }
 
-void mqtt_message_callback(const struct mosquitto_message *message)
+void mqtt_message_callback(const struct mosquitto_message *msg)
 {
-    char *log = message->payload;
+    const char *log = msg->payload;
     LOGE("mqtt_message_callback %s", log);
-    const unsigned char *payload = message->payload;
+    mqtt_message *message = (mqtt_message *)malloc(sizeof(mqtt_message));
+    memset(message, 0, sizeof(mqtt_message));
+    int rc = unpack_message(msg->payload, msg->payloadlen, message);
+    LOGE("mqtt_message_callback unpack_message rc %d\n", rc);
+    free(msg->topic);
+    const unsigned char *payload = message->msg_payload;
     JNIEnv *env = Android_JNI_GetEnv();
     jstring topic = (*env)->NewStringUTF(env, message->topic);
-    int len = message->payloadlen;
+    int len = strlen(message->msg_payload);
     jbyteArray byteArray = (*env)->NewByteArray(env, len);
     (*env)->SetByteArrayRegion(env, byteArray, 0, len, (jbyte *)payload);
     (*env)->CallVoidMethod(env, mMqttObj, midOnMessage, topic, byteArray);
@@ -124,7 +129,7 @@ Java_com_mqtt_jni_MosquittoJNI_nativeSetupJNI(JNIEnv *mEnv, jobject obj)
 {
     LOGE("nativeSetupJNI");
     mMqttObj = (jobject)((*mEnv)->NewGlobalRef(mEnv, obj));
-    jclass clazz = (*mEnv)->GetObjectClass(mEnv,obj);
+    jclass clazz = (*mEnv)->GetObjectClass(mEnv, obj);
     // jclass clazz = (*mEnv)->FindClass(mEnv, "com/mqtt/jni/MosquittoJNI");
     if (clazz)
     {
@@ -233,17 +238,17 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_unsubscribe(
 }
 
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_publish(
-    JNIEnv *mEnv, jobject obj, jstring jtopic, jbyteArray jmessage, jint qos)
+    JNIEnv *mEnv, jobject obj, jstring jtopic, jbyteArray jpayload, jint qos)
 {
     int status = 0;
     const char *topic = (*mEnv)->GetStringUTFChars(mEnv, jtopic, JNI_FALSE);
-    int len = (*mEnv)->GetArrayLength(mEnv, jmessage);
-    unsigned char *message = (char *)malloc(sizeof(char) * (len + 1));
-    memset(message, 0, sizeof(char) * (len + 1));
-    (*mEnv)->GetByteArrayRegion(mEnv, jmessage, 0, len, (jbyte *)message);
-    status = mqtt_publish(topic, message, qos);
+    int len = (*mEnv)->GetArrayLength(mEnv, jpayload);
+    unsigned char *payload = (char *)malloc(sizeof(char) * (len + 1));
+    memset(payload, 0, sizeof(char) * (len + 1));
+    (*mEnv)->GetByteArrayRegion(mEnv, jpayload, 0, len, (jbyte *)payload);
+    status = mqtt_publish(topic, payload, qos);
     (*mEnv)->ReleaseStringUTFChars(mEnv, jtopic, topic);
-    free(message);
+    free(payload);
     return status;
 }
 
