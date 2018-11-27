@@ -1,4 +1,4 @@
-option(WITH_STATIC_LIBRARIES "Build static versions of the libmosquitto/pp libraries?" OFF)
+option(WITH_STATIC_LIBRARIES "Build static versions of the libmosquitto/pp libraries?" ON)
 option(WITH_PIC "Build the static library with PIC (Position Independent Code) enabled archives?" OFF)
 add_subdirectory(cpp)
 
