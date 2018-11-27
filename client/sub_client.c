@@ -33,6 +33,7 @@ Contributors:
 
 #include <mosquitto.h>
 #include "client_shared.h"
+#include <mqtt_message.h>
 
 bool process_messages = true;
 int msg_count = 0;
@@ -75,8 +76,13 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 			if(res) return;
 		}
 	}
-
-	print_message(cfg, message);
+	mqtt_message *mm = (mqtt_message *)malloc(sizeof(mqtt_message));
+    memset(mm, 0, sizeof(mqtt_message));
+	size_t j = 0;
+	size_t len = message->payloadlen;
+    int rc = unpack_message(message->payload, len, mm);
+	printf("unpack_message payload: %s topic: %s\n", mm->msg_payload, mm->topic);
+	message__cleanup(&mm);
 
 	if(cfg->msg_count>0){
 		msg_count++;

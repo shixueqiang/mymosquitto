@@ -54,6 +54,8 @@ elseif(${TARGET_IOS} STREQUAL ON)
 	set(CMAKE_TOOLCHAIN_FILE ios/ios.toolchain.cmake)
 endif(${TARGET_ANDROID} STREQUAL ON)
 
+SET (CMAKE_C_FLAGS "-g ${CMAKE_C_FLAGS}")
+
 project(mosquitto)
 
 option(WITH_TLS

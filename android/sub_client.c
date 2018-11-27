@@ -75,29 +75,27 @@ uint32_t get_current_time()
    return tv.tv_sec * 1000 + tv.tv_usec / 1000;  
 }  
 
-int mqtt_publish(const char *topic, const void *payload, int qos)
+int mqtt_publish(char *topic, void *payload, int qos)
 {
 	int mid_sent;
-	int msglen = strlen(payload);
-	LOGE("mqtt_message init");
 	mqtt_message *message = (mqtt_message *)malloc(sizeof(mqtt_message));
     memset(message, 0, sizeof(mqtt_message));
 	message->msg_type = MQTT_MESSAGE_TEXT;
 	message->msg_timestamp = get_current_time();
-	message->client_id = global_client_id;
-	message->topic = topic;
+	message->client_id = strdup(global_client_id);
+	message->topic = strdup(topic);
 	char str[32];
 	sprintf(str, "%d", message->msg_timestamp);
 	message->msg_id = str;
-	message->msg_payload = payload;
-	LOGE("mqtt_message start pack");
+	message->msg_payload = strdup(payload);
 	msgpack_sbuffer *sbuf = (msgpack_sbuffer *)malloc(sizeof(msgpack_sbuffer));
 	/* msgpack::sbuffer is a simple buffer implementation. */
 	msgpack_sbuffer_init(sbuf);
 	pack_message(message, sbuf);
 	LOGE("mqtt_message pack success");
-	int status = mosquitto_publish(mosq, &mid_sent, topic, msglen, sbuf->data, qos, 0);
+	int status = mosquitto_publish(mosq, &mid_sent, topic, sbuf->size, sbuf->data, qos, 0);
 	LOGE("mqtt_publish mid_send %d", mid_sent);
+	message__cleanup(&message);
 	return status;
 }
 
@@ -332,6 +330,7 @@ int mqtt_main(int argc, char *argv[])
 		return 1;
 	}
 
+	LOGE("mqtt_main mosquitto_new");
 	mosq = mosquitto_new(cfg.id, cfg.clean_session, &cfg);
 	if(!mosq){
 		switch(errno){
@@ -345,6 +344,7 @@ int mqtt_main(int argc, char *argv[])
 		mosquitto_lib_cleanup();
 		return 1;
 	}
+	LOGE("mqtt_main client_opts_set");
 	if(client_opts_set(mosq, &cfg)){
 		return 1;
 	}
@@ -355,7 +355,7 @@ int mqtt_main(int argc, char *argv[])
 	mosquitto_connect_with_flags_callback_set(mosq, my_connect_callback);
 	mosquitto_publish_callback_set(mosq, my_publish_callback);
 	mosquitto_message_callback_set(mosq, my_message_callback);
-
+	LOGE("mqtt_main connect start");
 	rc = client_connect(mosq, &cfg);
 	LOGE("mqtt_main connect rc is %d\n", rc);
 	if(rc) return rc;

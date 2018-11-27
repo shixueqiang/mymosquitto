@@ -21,6 +21,7 @@ Contributors:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #ifndef WIN32
 #include <time.h>
 #else
@@ -31,6 +32,8 @@ Contributors:
 
 #include <mosquitto.h>
 #include "client_shared.h"
+#include <mqtt_message.h>
+#include "memory_mosq.h"
 
 #define STATUS_CONNECTING 0
 #define STATUS_CONNACK_RECVD 1
@@ -54,12 +57,50 @@ static char *username = NULL;
 static char *password = NULL;
 static bool disconnect_sent = false;
 static bool quiet = false;
+char *global_client_id = NULL;
+
+uint32_t get_current_time()  
+{  
+   struct timeval tv;  
+   gettimeofday(&tv,NULL);  
+   return tv.tv_sec * 1000 + tv.tv_usec / 1000;  
+}  
+
+char *create_mqtt_msg(char *topic, void *payload, int qos)
+{
+	mqtt_message *message = (mqtt_message *)malloc(sizeof(mqtt_message));
+    memset(message, 0, sizeof(mqtt_message));
+	message->msg_type = MQTT_MESSAGE_TEXT;
+	message->msg_timestamp = get_current_time();
+	message->client_id = strdup(global_client_id);
+	message->topic = strdup(topic);
+	char str[32];
+	sprintf(str, "%d", message->msg_timestamp);
+	message->msg_id = str;
+	message->msg_payload = strdup(payload);
+	msgpack_sbuffer *sbuf = (msgpack_sbuffer *)malloc(sizeof(msgpack_sbuffer));
+	/* msgpack::sbuffer is a simple buffer implementation. */
+	msgpack_sbuffer_init(sbuf);
+	pack_message(message, sbuf);
+	size_t i = 0;
+    for(; i < sbuf->size ; ++i)
+        printf("%02x ", 0xff & sbuf->data[i]);
+    printf("\n");
+	// mqtt_message *mm = (mqtt_message *)malloc(sizeof(mqtt_message));
+    // memset(mm, 0, sizeof(mqtt_message));
+    // int rc = unpack_message(sbuf->data,sbuf->size, mm);
+	// fprintf(stdout, "unpack_message %s\n", mm->msg_payload);
+	msglen = sbuf->size;
+	message__cleanup(&message);
+	return sbuf->data;
+}
 
 void my_connect_callback(struct mosquitto *mosq, void *obj, int result)
 {
 	int rc = MOSQ_ERR_SUCCESS;
-
+	printf("my_connect_callback %d\n", result);
 	if(!result){
+		printf("my_connect_callback mode is %d\n", mode);
 		switch(mode){
 			case MSGMODE_CMD:
 			case MSGMODE_FILE:
@@ -326,8 +367,10 @@ int main(int argc, char *argv[])
 	}
 
 	topic = cfg.topic;
-	message = cfg.message;
-	msglen = cfg.msglen;
+	// message = cfg.message;
+	global_client_id = cfg.id;
+	message = create_mqtt_msg(cfg.topic, cfg.message, cfg.qos);
+	// msglen = cfg.msglen;
 	qos = cfg.qos;
 	retain = cfg.retain;
 	mode = cfg.pub_mode;

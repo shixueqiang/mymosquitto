@@ -17,6 +17,8 @@
         "signal.h": "c",
         "unistd.h": "c",
         "msgpack.h": "c",
-        "mqtt_message.h": "c"
+        "mqtt_message.h": "c",
+        "time.h": "c",
+        "util_mosq.h": "c"
     }
 }

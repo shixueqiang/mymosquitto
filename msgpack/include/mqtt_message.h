@@ -9,13 +9,26 @@
 #define MQTT_MESSAGE_FILE 0x5
 typedef struct
 {
-    uint8_t msg_type;        /* 消息类型*/
-    uint32_t msg_timestamp;  /* 时间戳*/
-    const char *client_id;   /* 设备id*/
-    const char *topic;       /* 主题*/
-    const char *msg_id;      /* 消息id*/
-    const char *msg_payload; /* 消息体*/
+    uint8_t msg_type;       /* 消息类型*/
+    uint32_t msg_timestamp; /* 时间戳*/
+    char *client_id;        /* 设备id*/
+    char *topic;            /* 主题*/
+    char *msg_id;           /* 消息id*/
+    char *msg_payload;      /* 消息体*/
 } mqtt_message;
+
+static void message__cleanup(mqtt_message **message)
+{
+	mqtt_message *msg;
+
+	if(!message || !*message) return;
+
+	msg = *message;
+
+	free(msg->client_id);
+	free(msg->topic);
+	free(msg);
+}
 
 static int pack_message(mqtt_message *message, msgpack_sbuffer *sbuf)
 {
@@ -42,7 +55,7 @@ static int pack_message(mqtt_message *message, msgpack_sbuffer *sbuf)
     size_t msg_payload_len = strlen(message->msg_payload);
     msgpack_pack_str(&pk, msg_payload_len);
     msgpack_pack_str_body(&pk, message->msg_payload, msg_payload_len);
-    free(message);
+
     return 0;
 }
 
@@ -63,12 +76,26 @@ static int unpack_message(char *data, size_t size, mqtt_message *message)
             if (deserialized.via.array.size != 0)
             {
                 msgpack_object *p = deserialized.via.array.ptr;
+
                 message->msg_type = p++->via.u64;
+                printf("message->msg_type:%d\n", message->msg_type);
                 message->msg_timestamp = p++->via.u64;
-                message->client_id = p++->via.str.ptr;
-                message->topic = p++->via.str.ptr;
-                message->msg_id = p++->via.str.ptr;
-                message->msg_payload = p++->via.str.ptr;
+                printf("message->msg_timestamp:%d\n", message->msg_timestamp);
+
+                message->client_id = strndup(p->via.str.ptr, p->via.str.size);
+                printf("message->client_id:%s\n", message->client_id);
+                p++;
+
+                message->topic = strndup(p->via.str.ptr, p->via.str.size);
+                printf("message->topic:%s\n", message->topic);
+                p++;
+
+                message->msg_id = strndup(p->via.str.ptr, p->via.str.size);
+                printf("message->msg_id:%s\n", message->msg_id);
+                p++;
+
+                message->msg_payload = strndup(p->via.str.ptr, p->via.str.size);
+                printf("message->msg_payload:%s\n", message->msg_payload);
             }
         }
         else
@@ -79,12 +106,12 @@ static int unpack_message(char *data, size_t size, mqtt_message *message)
     }
     else
     {
-        message->msg_payload = "parse mqtt_message error";
+        printf("msgpack_unpack error rc is %d\n", rc);
+        message->msg_payload = "msgpack_unpack error";
         return rc;
     }
 
     msgpack_zone_destroy(&mempool);
-    free(data);
     return MSGPACK_UNPACK_SUCCESS;
 }
 #endif

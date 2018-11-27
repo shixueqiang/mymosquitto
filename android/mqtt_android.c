@@ -50,8 +50,7 @@ void mqtt_message_callback(const struct mosquitto_message *msg)
     mqtt_message *message = (mqtt_message *)malloc(sizeof(mqtt_message));
     memset(message, 0, sizeof(mqtt_message));
     int rc = unpack_message(msg->payload, msg->payloadlen, message);
-    LOGE("mqtt_message_callback unpack_message rc %d\n", rc);
-    free(msg->topic);
+    LOGE("mqtt_message_callback unpack_message rc %d message: %s topic: %s\n", rc, message->msg_payload, message->topic);
     const unsigned char *payload = message->msg_payload;
     JNIEnv *env = Android_JNI_GetEnv();
     jstring topic = (*env)->NewStringUTF(env, message->topic);
@@ -241,7 +240,7 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_publish(
     JNIEnv *mEnv, jobject obj, jstring jtopic, jbyteArray jpayload, jint qos)
 {
     int status = 0;
-    const char *topic = (*mEnv)->GetStringUTFChars(mEnv, jtopic, JNI_FALSE);
+    char *topic = (char *)(*mEnv)->GetStringUTFChars(mEnv, jtopic, JNI_FALSE);
     int len = (*mEnv)->GetArrayLength(mEnv, jpayload);
     unsigned char *payload = (char *)malloc(sizeof(char) * (len + 1));
     memset(payload, 0, sizeof(char) * (len + 1));
