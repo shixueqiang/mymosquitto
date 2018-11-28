@@ -6,6 +6,7 @@ public class MosquittoJNI {
 
     static {
         System.loadLibrary("mosquitto");
+        System.loadLibrary("msgpackc");
         System.loadLibrary("mqtt");
     }
 
@@ -31,13 +32,13 @@ public class MosquittoJNI {
 
     public native int unsubscribe(String[] topics);
 
-    public native int publish(String topic, byte[] message, int qos);
+    public native int publish(String topic, String payload, int qos);
 
     public native void nativeQuit();
 
-    private void onMessage(String topic, byte[] message) {
+    private void onMessage(ReceiveMessage message) {
         if (messageListener != null) {
-            messageListener.onMessage(topic, message);
+            messageListener.onMessage(message);
         }
     }
 

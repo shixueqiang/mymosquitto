@@ -13,7 +13,7 @@ typedef struct
     uint32_t msg_timestamp; /* 时间戳*/
     char *client_id;        /* 设备id*/
     char *topic;            /* 主题*/
-    char *msg_id;           /* 消息id*/
+    char *msg_id;           /* 消息id 设备id+时间戳*/
     char *msg_payload;      /* 消息体*/
 } mqtt_message;
 

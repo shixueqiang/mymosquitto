@@ -74,9 +74,9 @@ char *create_mqtt_msg(char *topic, void *payload, int qos)
 	message->msg_timestamp = get_current_time();
 	message->client_id = strdup(global_client_id);
 	message->topic = strdup(topic);
-	char str[32];
-	sprintf(str, "%d", message->msg_timestamp);
-	message->msg_id = str;
+	char *msg_id = (char *) malloc(strlen(message->client_id) + sizeof(uint32_t));
+	sprintf(msg_id, "%s%d", message->client_id, message->msg_timestamp);
+	message->msg_id = msg_id;
 	message->msg_payload = strdup(payload);
 	msgpack_sbuffer *sbuf = (msgpack_sbuffer *)malloc(sizeof(msgpack_sbuffer));
 	/* msgpack::sbuffer is a simple buffer implementation. */
