@@ -110,6 +110,8 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 	const char *topic;
 	int syslog_priority;
 	time_t now = time(NULL);
+	struct tm *timeinfo;
+	timeinfo = localtime (&now);
 	static time_t last_flush = 0;
 
 	if((log_priorities & priority) && log_destinations != MQTT3_LOG_NONE){
@@ -213,7 +215,7 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 		}
 		if(log_destinations & MQTT3_LOG_FILE && int_db.config->log_fptr){
 			if(int_db.config && int_db.config->log_timestamp){
-				fprintf(int_db.config->log_fptr, "%d: %s\n", (int)now, s);
+				fprintf(int_db.config->log_fptr, "%d-%d-%d %d:%d:%d : %s\n", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec, s);
 			}else{
 				fprintf(int_db.config->log_fptr, "%s\n", s);
 			}
