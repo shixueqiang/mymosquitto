@@ -19,15 +19,18 @@ typedef struct
 
 static void message__cleanup(mqtt_message **message)
 {
-	mqtt_message *msg;
+    mqtt_message *msg;
 
-	if(!message || !*message) return;
+    if (!message || !*message)
+        return;
 
-	msg = *message;
+    msg = *message;
 
-	free(msg->client_id);
-	free(msg->topic);
-	free(msg);
+    free(msg->client_id);
+    free(msg->topic);
+    free(msg->msg_id);
+    free(msg->msg_payload);
+    free(msg);
 }
 
 static int pack_message(mqtt_message *message, msgpack_sbuffer *sbuf)
@@ -100,14 +103,12 @@ static int unpack_message(char *data, size_t size, mqtt_message *message)
         }
         else
         {
-            message->msg_payload = "parse mqtt_message error";
             return MSGPACK_UNPACK_PARSE_ERROR;
         }
     }
     else
     {
         printf("msgpack_unpack error rc is %d\n", rc);
-        message->msg_payload = "msgpack_unpack error";
         return rc;
     }
 
