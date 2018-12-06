@@ -67,6 +67,18 @@ int log__init(struct mosquitto__config *config)
 		if(drop_privileges(config, true)){
 			return 1;
 		}
+		char *log_file = config->log_file;
+		time_t now = time(NULL);
+		struct tm *timeinfo;
+		timeinfo = localtime (&now);
+		int year = timeinfo->tm_year + 1900;
+		int month = timeinfo->tm_mon + 1;
+		int day = timeinfo->tm_mday;
+		char *split = "-";
+		char *openfile = malloc(strlen(log_file) + strlen(split) + sizeof(int) * 3);
+		sprintf(openfile, "%s%s%d%d%d", log_file, split, year, month, day);
+		config->last_log_time = (year << 9) | (month << 5) | day;
+		config->log_file = openfile;
 		config->log_fptr = mosquitto__fopen(config->log_file, "at", true);
 		if(!config->log_fptr){
 			log_destinations = MQTT3_LOG_STDERR;
@@ -215,6 +227,24 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 		}
 		if(log_destinations & MQTT3_LOG_FILE && int_db.config->log_fptr){
 			if(int_db.config && int_db.config->log_timestamp){
+				int year = timeinfo->tm_year + 1900;
+				int month = timeinfo->tm_mon + 1;
+				int day = timeinfo->tm_mday;
+				int last_log_time = (year << 9) | (month << 5) | day;
+				if(int_db.config->last_log_time < last_log_time)
+				{
+					int_db.config->last_log_time = last_log_time;
+					char *log_file = int_db.config->log_file;
+					//按日期区分日志文件
+					char *split = "-";
+					char *openfile = malloc(strlen(log_file) + strlen(split) + sizeof(int) * 3);
+					sprintf(openfile, "%s%s%d%d%d", log_file, split, year, month, day);
+					int_db.config->log_file = openfile;
+					free(log_file);
+					FILE *log_fptr = int_db.config->log_fptr;
+					int_db.config->log_fptr = mosquitto__fopen(int_db.config->log_file, "at", true);
+					free(log_fptr);
+				}
 				fprintf(int_db.config->log_fptr, "%d-%d-%d %d:%d:%d : %s\n", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec, s);
 			}else{
 				fprintf(int_db.config->log_fptr, "%s\n", s);
