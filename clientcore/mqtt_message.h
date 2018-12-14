@@ -2,6 +2,8 @@
 #define MQTT_MESSAGE_H
 #include <stdint.h>
 #include <msgpack.h>
+#include <time.h>
+#include <sys/time.h>
 #define MQTT_MESSAGE_TEXT 0x1
 #define MQTT_MESSAGE_IMG 0x2
 #define MQTT_MESSAGE_VOICE 0x3
@@ -9,12 +11,12 @@
 #define MQTT_MESSAGE_FILE 0x5
 typedef struct
 {
-    uint8_t msg_type;       /* 消息类型*/
-    uint32_t msg_timestamp; /* 时间戳*/
-    char *client_id;        /* 设备id*/
-    char *topic;            /* 主题*/
-    char *msg_id;           /* 消息id 设备id+时间戳*/
-    char *msg_payload;      /* 消息体*/
+    uint8_t msg_type;     /* 消息类型*/
+    time_t msg_timestamp; /* 时间戳*/
+    char *client_id;      /* 设备id*/
+    char *topic;          /* 主题*/
+    char *msg_id;         /* 消息id 设备id+时间戳*/
+    char *msg_payload;    /* 消息体*/
 } mqtt_message;
 
 static void message__cleanup(mqtt_message **message)
@@ -60,6 +62,24 @@ static int pack_message(mqtt_message *message, msgpack_sbuffer *sbuf)
     msgpack_pack_str_body(&pk, message->msg_payload, msg_payload_len);
 
     return 0;
+}
+
+static int create_mqtt_msg(uint8_t msg_type, const char *client_id, const char *topic, const void *payload, int qos, msgpack_sbuffer *sbuf)
+{
+    int rc;
+    mqtt_message *message = (mqtt_message *)malloc(sizeof(mqtt_message));
+    memset(message, 0, sizeof(mqtt_message));
+    message->msg_type = msg_type;
+    message->msg_timestamp = time(NULL);
+    message->client_id = strdup(client_id);
+    message->topic = strdup(topic);
+    char *msg_id = (char *)malloc(strlen(message->client_id) + sizeof(time_t));
+    sprintf(msg_id, "%s%ld", message->client_id, message->msg_timestamp);
+    message->msg_id = msg_id;
+    message->msg_payload = strdup(payload);
+    rc = pack_message(message, sbuf);
+    message__cleanup(&message);
+    return rc;
 }
 
 static int unpack_message(char *data, size_t size, mqtt_message *message)

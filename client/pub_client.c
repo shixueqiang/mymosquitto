@@ -59,40 +59,14 @@ static bool disconnect_sent = false;
 static bool quiet = false;
 char *global_client_id = NULL;
 
-uint32_t get_current_time()  
-{  
-   struct timeval tv;  
-   gettimeofday(&tv,NULL);  
-   return tv.tv_sec * 1000 + tv.tv_usec / 1000;  
-}  
-
-char *create_mqtt_msg(char *topic, void *payload, int qos)
+char *gen_mqtt_msg(char *topic, void *payload, int qos)
 {
-	mqtt_message *message = (mqtt_message *)malloc(sizeof(mqtt_message));
-    memset(message, 0, sizeof(mqtt_message));
-	message->msg_type = MQTT_MESSAGE_TEXT;
-	message->msg_timestamp = get_current_time();
-	message->client_id = strdup(global_client_id);
-	message->topic = strdup(topic);
-	char *msg_id = (char *) malloc(strlen(message->client_id) + sizeof(uint32_t));
-	sprintf(msg_id, "%s%d", message->client_id, message->msg_timestamp);
-	message->msg_id = msg_id;
-	message->msg_payload = strdup(payload);
-	msgpack_sbuffer *sbuf = (msgpack_sbuffer *)malloc(sizeof(msgpack_sbuffer));
+	msgpack_sbuffer sbuf;
 	/* msgpack::sbuffer is a simple buffer implementation. */
-	msgpack_sbuffer_init(sbuf);
-	pack_message(message, sbuf);
-	size_t i = 0;
-    for(; i < sbuf->size ; ++i)
-        printf("%02x ", 0xff & sbuf->data[i]);
-    printf("\n");
-	// mqtt_message *mm = (mqtt_message *)malloc(sizeof(mqtt_message));
-    // memset(mm, 0, sizeof(mqtt_message));
-    // int rc = unpack_message(sbuf->data,sbuf->size, mm);
-	// fprintf(stdout, "unpack_message %s\n", mm->msg_payload);
-	msglen = sbuf->size;
-	message__cleanup(&message);
-	return sbuf->data;
+	msgpack_sbuffer_init(&sbuf);
+	create_mqtt_msg(MQTT_MESSAGE_TEXT, global_client_id, topic, payload, qos, &sbuf);
+	msglen = sbuf.size;
+	return sbuf.data;
 }
 
 void my_connect_callback(struct mosquitto *mosq, void *obj, int result)
@@ -369,7 +343,7 @@ int main(int argc, char *argv[])
 	topic = cfg.topic;
 	// message = cfg.message;
 	global_client_id = cfg.id;
-	message = create_mqtt_msg(cfg.topic, cfg.message, cfg.qos);
+	message = gen_mqtt_msg(cfg.topic, cfg.message, cfg.qos);
 	// msglen = cfg.msglen;
 	qos = cfg.qos;
 	retain = cfg.retain;

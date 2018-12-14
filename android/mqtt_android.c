@@ -1,5 +1,5 @@
 #include "mqtt_jni.h"
-#include "mqtt_main.h"
+#include "mqtt_android.h"
 #include <jni.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -262,7 +262,7 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_unsubscribe(
 }
 
 JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_publish(
-    JNIEnv *mEnv, jobject obj, jstring jtopic, jstring jpayload, jint qos)
+    JNIEnv *mEnv, jobject obj, jint jmsgType, jstring jtopic, jstring jpayload, jint qos)
 {
     int status = 0;
     char *topic = (char *)(*mEnv)->GetStringUTFChars(mEnv, jtopic, JNI_FALSE);
@@ -271,10 +271,15 @@ JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_publish(
     // memset(payload, 0, sizeof(char) * (len + 1));
     // (*mEnv)->GetByteArrayRegion(mEnv, jpayload, 0, len, (jbyte *)payload);
     char *payload = (char *)(*mEnv)->GetStringUTFChars(mEnv, jpayload, JNI_FALSE);
-    status = mqtt_publish(topic, payload, qos);
+    status = mqtt_publish(jmsgType, topic, payload, qos);
     (*mEnv)->ReleaseStringUTFChars(mEnv, jtopic, topic);
     (*mEnv)->ReleaseStringUTFChars(mEnv, jpayload, payload);
     return status;
+}
+
+JNIEXPORT jint JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeLogout(JNIEnv *mEnv, jobject obj)
+{
+    mqtt_logout();
 }
 
 JNIEXPORT void JNICALL Java_com_mqtt_jni_MosquittoJNI_nativeQuit(JNIEnv *mEnv,

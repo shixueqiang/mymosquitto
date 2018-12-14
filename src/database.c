@@ -846,6 +846,50 @@ int db__message_release(struct mosquitto_db *db, struct mosquitto *context, uint
 	}
 }
 
+int db__message_push(struct mosquitto_db *db, struct mosquitto *context)
+{
+	int rc;
+	struct mosquitto_client_msg *tail = NULL;
+	int retain;
+	const char *topic;
+	int qos;
+	if(!context || !context->id) {
+		return MOSQ_ERR_INVAL;
+	}
+	if(context->state == mosq_cs_connected){
+		return MOSQ_ERR_SUCCESS;
+	}
+	tail = context->inflight_msgs;
+	while(tail){
+		retain = tail->retain;
+		topic = tail->store->topic;
+		qos = tail->qos;
+		if(!tail->push){
+			log__printf(NULL, MOSQ_LOG_DEBUG, "db_message_push inflight_msgs source_id:%s,topic:%s", tail->store->source_id, topic);
+			rc = sub__messages_queue(db, tail->store->source_id, "topic/push", 0, retain, &tail->store);
+			if(!rc) {
+				tail->push = 1;
+			}
+		}
+		tail = tail->next;
+	}
+	tail = context->queued_msgs;
+	while(tail){
+		retain = tail->retain;
+		topic = tail->store->topic;
+		qos = tail->qos;
+		if(!tail->push){
+			log__printf(NULL, MOSQ_LOG_DEBUG, "db_message_push queued_msgs source_id:%s,topic:%s", tail->store->source_id, topic);
+			rc = sub__messages_queue(db, tail->store->source_id, "topic/push", 0, retain, &tail->store);
+			if(!rc) {
+				tail->push = 1;
+			}
+		}
+		tail = tail->next;
+	}
+	return rc;
+}
+
 int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 {
 	int rc;

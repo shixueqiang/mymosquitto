@@ -21,6 +21,8 @@
         "time.h": "c",
         "util_mosq.h": "c",
         "cstring": "cpp",
-        "sstream": "c"
+        "sstream": "c",
+        "mqtt_android.h": "c",
+        "stdint.h": "c"
     }
 }

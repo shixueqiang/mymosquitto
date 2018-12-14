@@ -217,7 +217,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 		now_time = time(NULL);
 
 		time_count = 0;
-		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){
+		HASH_ITER(hh_id, db->contexts_by_id, context, ctxt_tmp){
 			if(time_count > 0){
 				time_count--;
 			}else{
@@ -225,7 +225,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 				now = mosquitto_time();
 			}
 			context->pollfd_index = -1;
-
+			
 			if(context->sock != INVALID_SOCKET){
 #ifdef WITH_BRIDGE
 				if(context->bridge){
@@ -329,6 +329,8 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 					/* Client has exceeded keepalive*1.5 */
 					do_disconnect(db, context);
 				}
+			} else {
+				db__message_push(db, context);
 			}
 		}
 

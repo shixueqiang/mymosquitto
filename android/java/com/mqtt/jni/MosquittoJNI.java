@@ -32,7 +32,9 @@ public class MosquittoJNI {
 
     public native int unsubscribe(String[] topics);
 
-    public native int publish(String topic, String payload, int qos);
+    public native int publish(int msgType, String topic, String payload, int qos);
+
+    public native int nativeLogout();
 
     public native void nativeQuit();
 

@@ -33,7 +33,7 @@ Contributors:
 
 #include <mosquitto.h>
 #include "client_shared.h"
-#include "mqtt_main.h"
+#include "mqtt_android.h"
 
 bool process_messages = true;
 int msg_count = 0;
@@ -68,41 +68,27 @@ int mqtt_unsubscribe(const char *topic)
 	return mosquitto_unsubscribe(mosq, NULL, topic); 
 }
 
-uint32_t get_current_time()  
-{  
-   struct timeval tv;  
-   gettimeofday(&tv,NULL);  
-   return tv.tv_sec * 1000 + tv.tv_usec / 1000;  
-}  
-
-int mqtt_publish(char *topic, void *payload, int qos)
+int mqtt_publish(uint8_t msg_type, const char *topic, const char *payload, int qos)
 {
 	int mid_sent;
-	mqtt_message *message = (mqtt_message *)malloc(sizeof(mqtt_message));
-    memset(message, 0, sizeof(mqtt_message));
-	message->msg_type = MQTT_MESSAGE_TEXT;
-	message->msg_timestamp = get_current_time();
-	message->client_id = strdup(global_client_id);
-	message->topic = strdup(topic);
-	char *msg_id = (char *) malloc(strlen(message->client_id) + sizeof(uint32_t));
-	sprintf(msg_id, "%s%d", message->client_id, message->msg_timestamp);
-	message->msg_id = msg_id;
-	message->msg_payload = strdup(payload);
-	msgpack_sbuffer *sbuf = (msgpack_sbuffer *)malloc(sizeof(msgpack_sbuffer));
+	msgpack_sbuffer sbuf;
 	/* msgpack::sbuffer is a simple buffer implementation. */
-	msgpack_sbuffer_init(sbuf);
-	pack_message(message, sbuf);
-	LOGE("mqtt_message pack success");
-	int status = mosquitto_publish(mosq, &mid_sent, topic, sbuf->size, sbuf->data, qos, 0);
-	LOGE("mqtt_publish mid_send %d", mid_sent);
-	message__cleanup(&message);
+	msgpack_sbuffer_init(&sbuf);
+	create_mqtt_msg(msg_type, global_client_id, topic, payload, qos, &sbuf);
+	int status = mosquitto_publish(mosq, &mid_sent, topic, sbuf.size, sbuf.data, qos, 0);
 	return status;
+}
+
+int mqtt_logout() {
+	int rc;
+	rc = mosquitto_disconnect(mosq);
+	return rc;
 }
 
 int mqtt_quit() {
 	mosquitto_destroy(mosq);
 	mosquitto_lib_cleanup();
-	return 1;
+	return 0;
 }
 
 void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)

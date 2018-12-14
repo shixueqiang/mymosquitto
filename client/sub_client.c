@@ -78,10 +78,9 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 	}
 	mqtt_message *mm = (mqtt_message *)malloc(sizeof(mqtt_message));
     memset(mm, 0, sizeof(mqtt_message));
-	size_t j = 0;
 	size_t len = message->payloadlen;
     int rc = unpack_message(message->payload, len, mm);
-	printf("unpack_message payload: %s topic: %s\n", mm->msg_payload, mm->topic);
+	printf("receive message payload: %s topic: %s\n", mm->msg_payload, mm->topic);
 	message__cleanup(&mm);
 
 	if(cfg->msg_count>0){

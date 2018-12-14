@@ -33,10 +33,15 @@ Contributors:
 
 #include <mosquitto.h>
 #include "client_shared.h"
+#include "mqtt_ios.h"
+
+#include <sys/time.h>
+#include <pthread.h>
 
 bool process_messages = true;
 int msg_count = 0;
 struct mosquitto *mosq = NULL;
+char* global_client_id = NULL;
 
 #ifndef WIN32
 void my_signal_handler(int signum)
@@ -46,10 +51,46 @@ void my_signal_handler(int signum)
 		mosquitto_disconnect(mosq);
 	}
 }
+
+void thread_exit_handler(int sig)
+{ 
+    printf("this signal is %d \n", sig);
+    pthread_exit(0);
+}
 #endif
 
 void print_message(struct mosq_config *cfg, const struct mosquitto_message *message);
 
+int mqtt_subscribe(const char *topic, int qos) 
+{ 
+	return mosquitto_subscribe(mosq, NULL, topic, qos); 
+}
+ 
+int mqtt_unsubscribe(const char *topic) 
+{ 
+	return mosquitto_unsubscribe(mosq, NULL, topic); 
+}
+
+int mqtt_publish(uint8_t msg_type, const char *topic, const char *payload, int qos)
+{
+	int mid_sent;
+	msgpack_sbuffer sbuf;
+	/* msgpack::sbuffer is a simple buffer implementation. */
+	msgpack_sbuffer_init(&sbuf);
+	create_mqtt_msg(msg_type, global_client_id, topic, payload, qos, &sbuf);
+	int status = mosquitto_publish(mosq, &mid_sent, topic, sbuf.size, sbuf.data, qos, 0);
+	return status;
+}
+
+int mqtt_logout() {
+	return 0;
+}
+
+int mqtt_quit() {
+	mosquitto_destroy(mosq);
+	mosquitto_lib_cleanup();
+	return 1;
+}
 
 void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
 {
@@ -77,6 +118,7 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 	}
 
 	print_message(cfg, message);
+	mqtt_message_callback(message);
 
 	if(cfg->msg_count>0){
 		msg_count++;
@@ -102,6 +144,7 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result, int flag
 		for(i=0; i<cfg->unsub_topic_count; i++){
 			mosquitto_unsubscribe(mosq, NULL, cfg->unsub_topics[i]);
 		}
+		mqtt_connect_callback();
 	}else{
 		if(result && !cfg->quiet){
 			fprintf(stderr, "%s\n", mosquitto_connack_string(result));
@@ -125,9 +168,15 @@ void my_subscribe_callback(struct mosquitto *mosq, void *obj, int mid, int qos_c
 	if(!cfg->quiet) printf("\n");
 }
 
+void my_publish_callback(struct mosquitto *mosq, void *obj, int mid)
+{
+	printf("my_publish_callback mid %d", mid);
+}
+
 void my_log_callback(struct mosquitto *mosq, void *obj, int level, const char *str)
 {
 	printf("%s\n", str);
+	mqtt_log_callback(str);
 }
 
 void print_usage(void)
@@ -231,7 +280,7 @@ void print_usage(void)
 	printf("\nSee http://mosquitto.org/ for more information.\n\n");
 }
 
-int main(int argc, char *argv[])
+int mqtt_main(int argc, char *argv[])
 {
 	struct mosq_config cfg;
 	int rc;
@@ -240,9 +289,10 @@ int main(int argc, char *argv[])
 #endif
 	
 	memset(&cfg, 0, sizeof(struct mosq_config));
-
+	printf("client_config_load start\n");
 	rc = client_config_load(&cfg, CLIENT_SUB, argc, argv);
 	if(rc){
+		printf("client_config_load error %d\n", rc);
 		client_config_cleanup(&cfg);
 		if(rc == 2){
 			/* --help */
@@ -252,6 +302,9 @@ int main(int argc, char *argv[])
 		}
 		return 1;
 	}
+
+	printf("mqtt_main client_config_load success id is %s\n", cfg.id);
+	global_client_id = cfg.id;
 
 	if(cfg.no_retain && cfg.retained_only){
 		fprintf(stderr, "\nError: Combining '-R' and '--retained-only' makes no sense.\n");
@@ -264,6 +317,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	printf("mqtt_main mosquitto_new");
 	mosq = mosquitto_new(cfg.id, cfg.clean_session, &cfg);
 	if(!mosq){
 		switch(errno){
@@ -277,6 +331,7 @@ int main(int argc, char *argv[])
 		mosquitto_lib_cleanup();
 		return 1;
 	}
+	printf("mqtt_main client_opts_set");
 	if(client_opts_set(mosq, &cfg)){
 		return 1;
 	}
@@ -285,9 +340,11 @@ int main(int argc, char *argv[])
 		mosquitto_subscribe_callback_set(mosq, my_subscribe_callback);
 	}
 	mosquitto_connect_with_flags_callback_set(mosq, my_connect_callback);
+	mosquitto_publish_callback_set(mosq, my_publish_callback);
 	mosquitto_message_callback_set(mosq, my_message_callback);
-
+	printf("mqtt_main connect start");
 	rc = client_connect(mosq, &cfg);
+	printf("mqtt_main connect rc is %d\n", rc);
 	if(rc) return rc;
 
 #ifndef WIN32
@@ -302,6 +359,16 @@ int main(int argc, char *argv[])
 
 	if(cfg.timeout){
 		alarm(cfg.timeout);
+	}
+
+	struct sigaction actions;
+	memset(&actions, 0, sizeof(actions)); 
+	sigemptyset(&actions.sa_mask);
+	actions.sa_flags = 0; 
+	actions.sa_handler = thread_exit_handler;
+	if(sigaction(SIGUSR1,&actions,NULL) == -1){
+		perror("sigaction");
+		return 1;
 	}
 #endif
 

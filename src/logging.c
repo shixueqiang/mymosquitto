@@ -124,11 +124,13 @@ void check_log_time(struct tm *timeinfo)
 		char *log_file = int_db.config->log_file;
 		//按日期区分日志文件
 		char *split = "-";
-		char *openfile = malloc(strlen(log_file) + strlen(split) + sizeof(int) * 3);
-		sprintf(openfile, "%s%s%d%d%d", log_file, split, year, month, day);
+		char *origin_log_file = strtok(log_file, split);
+		char *openfile = malloc(strlen(origin_log_file) + strlen(split) + sizeof(int) * 3);
+		sprintf(openfile, "%s%s%d%d%d", origin_log_file, split, year, month, day);
 		int_db.config->log_file = openfile;
 		FILE *log_fptr = int_db.config->log_fptr;
 		int_db.config->log_fptr = mosquitto__fopen(int_db.config->log_file, "at", true);
+		free(origin_log_file);
 		free(log_file);
 		free(log_fptr);
 	}
